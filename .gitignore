@@ -1,0 +1,4 @@
+# ignore files for java daemon application
+*/.idea
+*/build
+.DS_Store
