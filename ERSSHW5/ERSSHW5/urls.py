@@ -14,8 +14,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # redirect all user related pages to user app(which should handle the authentication)
+    path('users/', include('users.urls')),
+    # redirect all pages to amazon
+    path('', include('amazon.urls'))
 ]

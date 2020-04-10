@@ -25,12 +25,14 @@ SECRET_KEY = '%f5o45o!1jroha1d&oc!d9cbhu3*v&27!3eb@jh_e)!+^!6k3l'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["0.0.0.0"]
+ALLOWED_HOSTS = ["web", "0.0.0.0", "127.0.0.1"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'amazon.apps.AmazonConfig',
+    'users.apps.UsersConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

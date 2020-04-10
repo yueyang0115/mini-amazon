@@ -1,0 +1,14 @@
+<html>
+<body>
+<div class="content-section">
+    <form action="POST">
+        {% csrf_token %}
+        <fieldset>
+            <legend>Join today</legend>
+            {{ form }}
+        </fieldset>
+        <button type="submit"> Sign up </button>
+    </form>
+</div>
+</body>
+</html>
