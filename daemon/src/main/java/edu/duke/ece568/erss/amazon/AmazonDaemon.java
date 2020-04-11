@@ -3,14 +3,16 @@
  */
 package edu.duke.ece568.erss.amazon;
 
+import edu.duke.ece568.erss.amazon.proto.AmazonUPSProtocol.*;
 import edu.duke.ece568.erss.amazon.proto.WorldAmazonProtocol.*;
 
-import java.awt.font.TextHitInfo;
 import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static edu.duke.ece568.erss.amazon.Utils.recvMsgFrom;
 import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
@@ -22,46 +24,199 @@ public class AmazonDaemon {
     private static final String HOST = "vcm-13663.vm.duke.edu";
     private static final int PORT = 23456;
 
+    // TODO: debug info
+    MockUPS ups;
+
     // NOTE!!! the world simulator use only one socket to communicate with us
     // i.e. the server expect to receive a AConnect from each new connection
     private Socket socket;
     private InputStream in;
     private OutputStream out;
     private long seqNum;
+    private Server upsServer;
+    private DaemonThread daemonThread;
+    private Map<Long, Package> packageMap;
+    private ThreadPoolExecutor threadPool;
+    private List<AInitWarehouse> warehouses;
+
 
     public AmazonDaemon() throws IOException {
+        ups = new MockUPS();
         this.seqNum = 0;
         this.socket = new Socket(HOST, PORT);
         this.in = socket.getInputStream();
         this.out = socket.getOutputStream();
+        this.daemonThread = null;
+        this.packageMap = new HashMap<>();
+        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(30);
+        this.threadPool = new ThreadPoolExecutor(50, 80, 5, TimeUnit.SECONDS, workQueue);
+        initWareHouse();
     }
 
-    public void run() throws IOException {
-        // the server listening the request comes from django front-end
-        Server daemonServer = new Server(8888);
-        // the server listening the request comes from UPS
-        Server upsServer = new Server(9999);
-
+    /**
+     * This function will set up a (UPS) server, waiting for the connection from UPS.
+     * After get the world id, and successfully connected to the world, it will
+     * open another thread handle the request coming from Django front-end. The main
+     * thread is used to communicate with UPS and the world.
+     */
+    public void config() throws IOException {
+        // TODO: debug info
+        ups.init();
         System.out.println("Daemon is running...");
-        System.out.println("Listening connection from front-end at 8888");
         System.out.println("Listening connection from UPS at 9999");
-        Socket s = daemonServer.accept();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
-        PrintWriter writer = new PrintWriter(s.getOutputStream());
-        System.out.println(reader.readLine());
-        writer.write("1");
-        writer.flush();
+        // the server listening the request comes from UPS
+        upsServer = new Server(9999);
+        Socket s = null;
+        while (s == null){
+            s = upsServer.accept();
+            if (s != null){
+                // TODO: receive the UAstart object, connect to the world and then send back ack
+                UAstart.Builder builder = UAstart.newBuilder();
+                recvMsgFrom(builder, s.getInputStream());
+                // has a valid world id
+                if (builder.hasWorldid() && connectToWorld(builder.getWorldid())){
+                    System.out.println("Amazon connected to the world.");
+                    // send back ack
+                    sendMsgTo(Res.newBuilder().addAck(builder.getSeqnum()).build(), s.getOutputStream());
+                    break;
+                }
+            }
+        }
+        run();
+    }
+
+    public void run() {
+        // TODO: debug info
+        new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+                System.out.println("try to connect to daemon server");
+                Socket socket = new Socket("localhost", 8888);
+                PrintWriter out = new PrintWriter(socket.getOutputStream());
+                out.write("2\n");
+                out.flush();
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                System.out.println(in.readLine());
+            }catch (Exception e){
+                System.err.println(e.toString());
+            }
+        }).start();
+
+        // prepare all core threads
+        threadPool.prestartAllCoreThreads();
+
+        daemonThread = new DaemonThread(packageID -> {
+            // use thread pool communicate with the world
+            threadPool.execute(() -> {
+                System.out.println("Receive new buying request");
+                // 1. retrieve the package info from DB
+                APurchaseMore.Builder newPackage = new SQL().queryPackage(packageID);
+                newPackage.setSeqnum(seqNum);
+                // 2. tell the world to purchase more
+                AResponses.Builder res = send(ACommands.newBuilder().addBuy(newPackage));
+                // 3. receive the purchase result
+                while (true){
+                    if (res.getArrivedCount() > 0){
+                        seqNum++;
+                        break;
+                    }
+                    // if only receive ack, keep waiting
+                    res.clear();
+                    recvMsgFrom(res, in);
+                }
+                System.out.println("Successful purchased");
+                // 4. create package object
+                APack.Builder builder = APack.newBuilder();
+                builder.setWhnum(newPackage.getWhnum());
+                builder.addAllThings(newPackage.getThingsList());
+                builder.setShipid(packageID);
+                builder.setSeqnum(-1);
+                Package p = new Package(packageID, newPackage.getWhnum(), builder.build());
+                packageMap.put(packageID, p);
+                // here, pick(to UPS) and pack(to world) happen in parallel
+                threadPool.execute(() -> {
+                    // ask the world to pack
+                    System.out.println("packing");
+                    pack(packageID);
+                    if (p.getTruckID() != -1){
+                        System.out.println("loading to truck " + p.getTruckID());
+                        // UPS already arrived at the warehouse
+                        System.out.println("loading");
+                        load(p.getId());
+                        System.out.println("loaded");
+                        // tell UPS to delivery after loading
+                        System.out.println("delivering");
+                        toDelivery(packageID);
+                        System.out.println("delivered");
+                    }
+                });
+                threadPool.execute(() -> {
+                    System.out.println("to pick");
+                    toPick(packageID);
+                    System.out.println("picked");
+                    System.out.println(packageMap.get(packageID).getTruckID());
+                });
+            });
+        });
+        daemonThread.start();
+
+        // main thread keep listening the connection coming from UPS
+        while (!Thread.currentThread().isInterrupted()){
+            Socket socket = upsServer.accept();
+            if (socket != null){
+                threadPool.execute(() -> {
+                    try {
+                        List<Long> seqs = new ArrayList<>();
+                        UAcommand.Builder command = UAcommand.newBuilder();
+                        recvMsgFrom(command, socket.getInputStream());
+                        System.out.println("receive from ups:");
+                        System.out.println(command);
+                        for (UApicked p : command.getPickList()){
+                            System.out.println("actually picked");
+                            // update package truck id and tell it to load
+                            synchronized (packageMap) {
+                                Package pk = packageMap.get(p.getShipid());
+                                pk.setTruckID(p.getTruckid());
+                                pk.setStatus(Package.LOADING);
+                                // check whether the package is packed
+                                if (pk.getStatus().equals(Package.PACKED)){
+                                    // make another thread to load
+                                    threadPool.execute(() -> {
+                                        System.out.println("actually loading");
+                                        load(pk.getId());
+                                        toDelivery(pk.getId());
+                                    });
+                                }
+                            }
+                            seqs.add(p.getSeqnum());
+                        }
+                        for (UAdelivered d : command.getDeliverList()){
+                            System.out.println("actually delivered");
+                            // set the package delivered and remove it from the map(don't care anymore)
+                            packageMap.get(d.getShipid()).setStatus(Package.DELIVERED);
+                            packageMap.remove(d.getShipid());
+                            seqs.add(d.getSeqnum());
+                        }
+                        // send back ack
+                        sendAck(command.build(), socket.getOutputStream());
+                    }catch (Exception e){
+                        System.err.println(e.toString());
+                    }
+                });
+            }
+        }
+    }
+
+    public void initWareHouse(){
+        warehouses = new ArrayList<>();
+        warehouses.add(AInitWarehouse.newBuilder().setId(0).setX(2).setY(2).build());
+        warehouses.add(AInitWarehouse.newBuilder().setId(1).setX(3).setY(3).build());
     }
 
     public boolean connectToWorld(long worldID) {
-        AInitWarehouse.Builder builder = AInitWarehouse.newBuilder();
-        builder.setId(1);
-        builder.setX(2);
-        builder.setY(2);
-
         AConnect.Builder connect =  AConnect.newBuilder();
         connect.setIsAmazon(true);
-        connect.addInitwh(builder);
+        connect.addAllInitwh(warehouses);
         if (worldID >= 0){
             connect.setWorldid(worldID);
         }
@@ -77,7 +232,50 @@ public class AmazonDaemon {
         return connected.getResult().equals("connected!");
     }
 
-    public void purchaseMore(List<AProduct> products) {
+    public void toPick(long packageID){
+        Package p = packageMap.get(packageID);
+        if (false){
+            try {
+                // TODO: ask UPS to go pick up
+                Socket socket = new Socket("localhost", 1111);
+                AUpick.Builder pick = AUpick.newBuilder();
+
+                pick.setPackage(p.getPack());
+                pick.setSeqnum(seqNum);
+                pick.setWh(warehouses.get(p.getWhID()));
+                // TODO: get the destination from DB
+                pick.setX(10);
+                pick.setY(10);
+
+                AUcommand.Builder command = AUcommand.newBuilder();
+                command.addPick(pick);
+                Res.Builder r = Res.newBuilder();
+                sendMsgTo(command.build(), socket.getOutputStream());
+                recvMsgFrom(r, socket.getInputStream());
+                // TODO: check ack
+                if(r.getAck(0) == seqNum){
+                    seqNum++;
+                }
+
+            }catch (Exception e){
+                System.err.println(e.toString());
+            }
+        }else {
+            // TODO: debug info
+            ups.pick(p.getWhID());
+            p.setTruckID(ups.truckID);
+        }
+    }
+
+    public void toDelivery(long packageID){
+        Package p = packageMap.get(packageID);
+        p.setStatus(Package.DELIVERING);
+        ups.delivery(10, 10, packageID);
+        p.setStatus(Package.DELIVERED);
+    }
+
+    /* ====== these three function is workable but old ====== */
+    public void purchaseMoreOld(List<AProduct> products) {
         ACommands.Builder command = ACommands.newBuilder();
 
         APurchaseMore.Builder purchase = APurchaseMore.newBuilder();
@@ -85,10 +283,6 @@ public class AmazonDaemon {
         purchase.setSeqnum(seqNum);
         purchase.setWhnum(1);
         command.addBuy(purchase);
-
-//        Socket socket = new Socket(HOST, PORT);
-//        InputStream in = socket.getInputStream();
-//        OutputStream out = socket.getOutputStream();
 
         AResponses.Builder responses = AResponses.newBuilder();
 
@@ -112,15 +306,15 @@ public class AmazonDaemon {
         }
         sendAck(seqs);
     }
+    public void packOld(List<AProduct> products){
 
-    public void pack(List<AProduct> products){
         ACommands.Builder command = ACommands.newBuilder();
 
         APack.Builder pack = APack.newBuilder();
         pack.addAllThings(products);
         pack.setSeqnum(seqNum);
         pack.setWhnum(1);
-        pack.setShipid(1); // equal to package id
+        pack.setShipid(1);
         command.addTopack(pack);
 
         AResponses.Builder responses = AResponses.newBuilder();
@@ -144,8 +338,7 @@ public class AmazonDaemon {
         }
         sendAck(seqs);
     }
-
-    public void load(int truckID){
+    public void loadOld(int truckID){
         ACommands.Builder command = ACommands.newBuilder();
 
         APutOnTruck.Builder load = APutOnTruck.newBuilder();
@@ -173,6 +366,79 @@ public class AmazonDaemon {
             seqs.add(loaded.getSeqnum());
         }
         sendAck(seqs);
+    }
+
+    public void pack(long packageID){
+        Package p = packageMap.get(packageID);
+        p.setStatus(Package.PACKING);
+
+        ACommands.Builder command = ACommands.newBuilder();
+
+        APack pack = p.getPack();
+        command.addTopack(pack.toBuilder().setSeqnum(seqNum));
+
+//        AResponses.Builder responses = AResponses.newBuilder();
+//
+//        sendMsgTo(command.build(), out);
+//        recvMsgFrom(responses, in);
+
+        AResponses.Builder responses = send(command);
+        System.out.println(responses.toString());
+
+        if (responses.getReadyCount() == 0){
+            responses = receive();
+            // only receive ack, need another receive to receive ready list
+//            responses.clear();
+//            recvMsgFrom(responses, in);
+            System.out.println(responses.toString());
+        }
+        // receive the ready list
+        seqNum++;
+
+        p.setStatus(Package.PACKED);
+
+//        List<Long> seqs = new ArrayList<>();
+//        for (APacked packed : responses.getReadyList()){
+//            seqs.add(packed.getSeqnum());
+//        }
+//        sendAck(seqs);
+    }
+
+    public void load(long shipID){
+        Package p = packageMap.get(shipID);
+        p.setStatus(Package.LOADING);
+
+        ACommands.Builder command = ACommands.newBuilder();
+
+        APutOnTruck.Builder load = APutOnTruck.newBuilder();
+        load.setWhnum(p.getWhID());
+        load.setTruckid(p.getTruckID());
+        load.setShipid(shipID);
+        load.setSeqnum(seqNum);
+        command.addLoad(load);
+
+//        AResponses.Builder responses = AResponses.newBuilder();
+//
+//        sendMsgTo(command.build(), out);
+//        recvMsgFrom(responses, in);
+
+        AResponses.Builder responses = send(command);
+        System.out.println(responses.toString());
+
+        if (responses.getLoadedCount() == 0){
+            responses = receive();
+//            responses.clear();
+//            recvMsgFrom(responses, in);
+            System.out.println(responses.toString());
+        }
+        seqNum++;
+        p.setStatus(Package.LOADED);
+
+//        List<Long> seqs = new ArrayList<>();
+//        for (ALoaded loaded : responses.getLoadedList()){
+//            seqs.add(loaded.getSeqnum());
+//        }
+//        sendAck(seqs);
     }
 
     public void query(int packageID){
@@ -237,11 +503,97 @@ public class AmazonDaemon {
         sendMsgTo(commands.build(), out);
     }
 
+    void sendAck(UAcommand command, OutputStream outputStream){
+        List<Long> seqs = new ArrayList<>();
+        for (UApicked a : command.getPickList()){
+            seqs.add(a.getSeqnum());
+        }
+        for (UAdelivered a : command.getDeliverList()){
+            seqs.add(a.getSeqnum());
+        }
+        Res.Builder res = Res.newBuilder();
+        for (long seq : seqs){
+            res.addAck(seq);
+        }
+        sendMsgTo(res.build(), outputStream);
+    }
+
+    /**
+     * This function will traverse the response object, find all seqnum field and send back corresponding ack.
+     * @param responses the response you want to ack
+     */
+    void sendAck(AResponses responses){
+        List<Long> seqs = new ArrayList<>();
+        for (APurchaseMore a : responses.getArrivedList()){
+            seqs.add(a.getSeqnum());
+        }
+        for (APacked a : responses.getReadyList()){
+            seqs.add(a.getSeqnum());
+        }
+        for (ALoaded a : responses.getLoadedList()){
+            seqs.add(a.getSeqnum());
+        }
+        for (AErr a : responses.getErrorList()){
+            seqs.add(a.getSeqnum());
+        }
+        for (APackage a : responses.getPackagestatusList()){
+            seqs.add(a.getSeqnum());
+        }
+        ACommands.Builder commands = ACommands.newBuilder();
+        for (long seq : seqs){
+            commands.addAcks(seq);
+        }
+        sendMsgTo(commands.build(), out);
+    }
+
+    /**
+     * A wrapper of the actual send function, this function will re-send automatically if timeout.
+     * @param commands ACommand
+     * @return AResponse object, in case the response contains something other than ack
+     */
+    AResponses.Builder send(ACommands.Builder commands){
+        System.out.println("amazon sending: " + commands.toString());
+
+        // receive ack and resend the message after 10s timeout
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                sendMsgTo(commands.build(), out);
+            }
+        }, 0, 10000);
+        AResponses.Builder responses = AResponses.newBuilder();
+        while (true){
+            // keep receiving message until receive expected ack
+            if (responses.getErrorCount() == 0 && responses.getAcksCount() > 0 && responses.getAcksList().get(responses.getAcksCount() - 1) == seqNum){
+                timer.cancel();
+                seqNum++;
+                break;
+            }else {
+                responses = receive();
+//                recvMsgFrom(responses, in);
+            }
+        }
+        return responses;
+    }
+
+    /**
+     * This function is a wrapper of actual receive function, it will send back the ack automatically.
+     */
+    AResponses.Builder receive(){
+        AResponses.Builder responses = AResponses.newBuilder();
+        recvMsgFrom(responses, in);
+        // send ack back
+        sendAck(responses.build());
+        return responses;
+    }
+
     public static void main(String[] args) throws Exception {
         AmazonDaemon amazonDaemon = new AmazonDaemon();
-        MockUPS ups = new MockUPS();
-        amazonDaemon.run();
+        amazonDaemon.config();
 
+//        MockUPS ups = new MockUPS();
+//
 //        if (!ups.connectToWorld(-1)){
 //            System.err.println("Cannot connect to the world, check your config.");
 //            return;
@@ -260,18 +612,17 @@ public class AmazonDaemon {
 //        products.add(AProduct.newBuilder().setId(2).setCount(3).setDescription("orange").build());
 //        products.add(AProduct.newBuilder().setId(3).setCount(4).setDescription("banana").build());
 //
-//        amazonDaemon.purchaseMore(products);
+//        amazonDaemon.purchaseMoreOld(products);
 //        System.out.println("amazon finish buying stuff");
-//
-//        amazonDaemon.pack(products);
-//        System.out.println("amazon finish packing stuff");
-//        amazonDaemon.query(1);
 //
 //        ups.pick(1);
 //        System.out.println("ups finish moving truck");
+//
+//        amazonDaemon.packOld(products);
+//        System.out.println("amazon finish packing stuff");
 //        amazonDaemon.query(1);
 //
-//        amazonDaemon.load(1);
+//        amazonDaemon.loadOld(1);
 //        System.out.println("amazon finish loading stuff");
 //
 //        amazonDaemon.query(1);

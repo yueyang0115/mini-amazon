@@ -33,7 +33,7 @@ message UAdelivered{
    required int64 shipid = 2;
    optional Err err = 4;
    optional int32 dest_x = 5;
-optional int32 dest_y = 6;   
+   optional int32 dest_y = 6;   
 }
  
 message UAstart{

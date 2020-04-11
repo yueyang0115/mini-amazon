@@ -23,12 +23,12 @@ public class Utils {
         }
     }
 
-    public static <T extends GeneratedMessageV3.Builder<?>> boolean recvMsgFrom(T msg, InputStream in) {
+    public static <T extends GeneratedMessageV3.Builder<?>> boolean recvMsgFrom(T response, InputStream in) {
         try {
             CodedInputStream codedInputStream = CodedInputStream.newInstance(in);
             int len = codedInputStream.readRawVarint32();
             int oldLimit = codedInputStream.pushLimit(len);
-            msg.mergeFrom(codedInputStream);
+            response.mergeFrom(codedInputStream);
             codedInputStream.popLimit(oldLimit);
             return true;
         }catch (IOException e){

@@ -10,6 +10,7 @@ def purchase(package_id):
     # NOTE: append a \n at the end to become a line
     msg = str(package_id) + '\n'
     client.send(msg.encode('utf-8'))
+    # expected response: ack:<package_id>
     data = client.recv(1024)
     data = data.decode()
     res = data.split(":")
