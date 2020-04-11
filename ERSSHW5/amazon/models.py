@@ -40,5 +40,5 @@ class Product(models.Model):
     package = models.ForeignKey(Package, on_delete=models.CASCADE, related_name="products")
 
     def __str__(self):
-        return "<" + str(self.package_id) + str(self.item) + ', ' + str(self.cnt) + ">"
+        return "<" + str(self.package_id) + " " + str(self.item) + ', ' + str(self.cnt) + ">"
 
