@@ -3,9 +3,11 @@
  */
 package edu.duke.ece568.erss.amazon;
 
-import edu.duke.ece568.erss.amazon.WorldAmazonProtocol.*;
+import edu.duke.ece568.erss.amazon.proto.WorldAmazonProtocol.*;
 
+import java.awt.font.TextHitInfo;
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +31,26 @@ public class AmazonDaemon {
 
     public AmazonDaemon() throws IOException {
         this.seqNum = 0;
-        socket = new Socket(HOST, PORT);
-        in = socket.getInputStream();
-        out = socket.getOutputStream();
+        this.socket = new Socket(HOST, PORT);
+        this.in = socket.getInputStream();
+        this.out = socket.getOutputStream();
+    }
+
+    public void run() throws IOException {
+        // the server listening the request comes from django front-end
+        Server daemonServer = new Server(8888);
+        // the server listening the request comes from UPS
+        Server upsServer = new Server(9999);
+
+        System.out.println("Daemon is running...");
+        System.out.println("Listening connection from front-end at 8888");
+        System.out.println("Listening connection from UPS at 9999");
+        Socket s = daemonServer.accept();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
+        PrintWriter writer = new PrintWriter(s.getOutputStream());
+        System.out.println(reader.readLine());
+        writer.write("1");
+        writer.flush();
     }
 
     public boolean connectToWorld(long worldID) {
@@ -206,7 +225,6 @@ public class AmazonDaemon {
         seqNum++;
     }
 
-
     /**
      * Send the ack of a list of sequence number.
      * @param seqs all sequence numbers you want to confirm
@@ -222,45 +240,47 @@ public class AmazonDaemon {
     public static void main(String[] args) throws Exception {
         AmazonDaemon amazonDaemon = new AmazonDaemon();
         MockUPS ups = new MockUPS();
+        amazonDaemon.run();
 
-        if (!ups.connectToWorld(-1)){
-            System.err.println("Cannot connect to the world, check your config.");
-            return;
-        }
-
-        if (!amazonDaemon.connectToWorld(ups.worldID)){
-            System.err.println("Cannot connect to the world, check your config.");
-            return;
-        }
-
-        System.out.println("both connect to the world");
-
-        List<AProduct> products = new ArrayList<>();
-        // buy something
-        products.add(AProduct.newBuilder().setId(1).setCount(2).setDescription("apple").build());
-        products.add(AProduct.newBuilder().setId(2).setCount(3).setDescription("orange").build());
-        products.add(AProduct.newBuilder().setId(3).setCount(4).setDescription("banana").build());
-        amazonDaemon.purchaseMore(products);
-        System.out.println("amazon finish buying stuff");
-
-        amazonDaemon.pack(products);
-        System.out.println("amazon finish packing stuff");
-        amazonDaemon.query(1);
-
-        ups.pick(1);
-        System.out.println("ups finish moving truck");
-        amazonDaemon.query(1);
-
-        amazonDaemon.load(1);
-        System.out.println("amazon finish loading stuff");
-
-        amazonDaemon.query(1);
-        ups.delivery(5, 5, 1);
-        System.out.println("ups finish delivery stuff");
-
-        amazonDaemon.query(1);
-
-        amazonDaemon.disconnect();
-        ups.disconnect();
+//        if (!ups.connectToWorld(-1)){
+//            System.err.println("Cannot connect to the world, check your config.");
+//            return;
+//        }
+//
+//        if (!amazonDaemon.connectToWorld(ups.worldID)){
+//            System.err.println("Cannot connect to the world, check your config.");
+//            return;
+//        }
+//
+//        System.out.println("both connect to the world");
+//
+//        List<AProduct> products = new ArrayList<>();
+//        // buy something
+//        products.add(AProduct.newBuilder().setId(1).setCount(2).setDescription("apple").build());
+//        products.add(AProduct.newBuilder().setId(2).setCount(3).setDescription("orange").build());
+//        products.add(AProduct.newBuilder().setId(3).setCount(4).setDescription("banana").build());
+//
+//        amazonDaemon.purchaseMore(products);
+//        System.out.println("amazon finish buying stuff");
+//
+//        amazonDaemon.pack(products);
+//        System.out.println("amazon finish packing stuff");
+//        amazonDaemon.query(1);
+//
+//        ups.pick(1);
+//        System.out.println("ups finish moving truck");
+//        amazonDaemon.query(1);
+//
+//        amazonDaemon.load(1);
+//        System.out.println("amazon finish loading stuff");
+//
+//        amazonDaemon.query(1);
+//        ups.delivery(5, 5, 1);
+//        System.out.println("ups finish delivery stuff");
+//
+//        amazonDaemon.query(1);
+//
+//        amazonDaemon.disconnect();
+//        ups.disconnect();
     }
 }

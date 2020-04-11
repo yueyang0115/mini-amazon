@@ -2,7 +2,7 @@ syntax = "proto2";
 
 package ups;
 
-option java_package = "edu.duke.ece568.erss.amazon";
+option java_package = "edu.duke.ece568.erss.amazon.proto";
 option java_outer_classname = "WorldUPSProtocol";
 
 message UInitTruck{

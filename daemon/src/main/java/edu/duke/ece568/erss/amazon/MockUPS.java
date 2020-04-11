@@ -7,7 +7,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.duke.ece568.erss.amazon.WorldUPSProtocol.*;
+import edu.duke.ece568.erss.amazon.proto.WorldUPSProtocol.*;
 import static edu.duke.ece568.erss.amazon.Utils.recvMsgFrom;
 import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
 
