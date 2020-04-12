@@ -24,9 +24,13 @@ public class Package {
     public Package(long id, int whID, APack pack) {
         this.id = id;
         this.whID = whID;
-        this.status = PROCESSING;
         this.pack = pack;
         this.truckID = -1;
+        // we will only create the package object after purchase successful, so the initial state should be PROCESSED
+        setStatus(PROCESSED);
+        // TODO: fetch the actual data from database
+        this.destX = 10;
+        this.destY = 10;
     }
 
     public long getId() {
@@ -82,6 +86,10 @@ public class Package {
         this.destY = y;
     }
 
+    /**
+     * This function will update the status of current package, and also write the statue into database.
+     * @param status latest status
+     */
     public void setStatus(String status){
         this.status = status;
         // write the result into DB

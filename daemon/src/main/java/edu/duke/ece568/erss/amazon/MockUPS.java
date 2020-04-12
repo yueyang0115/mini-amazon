@@ -12,6 +12,9 @@ import edu.duke.ece568.erss.amazon.proto.WorldUPSProtocol.*;
 import static edu.duke.ece568.erss.amazon.Utils.recvMsgFrom;
 import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
 
+/**
+ * This class is mainly for testing purpose, mock a simple UPS.
+ */
 public class MockUPS {
     private static final String HOST = "vcm-13663.vm.duke.edu";
     private static final int PORT = 12345;
@@ -103,7 +106,6 @@ public class MockUPS {
             }
             sendAck(seqs);
 
-            // TODO: send back result
             try{
                 Socket socket = new Socket("localhost", 9999);
                 AmazonUPSProtocol.UApicked.Builder picked = AmazonUPSProtocol.UApicked.newBuilder();
@@ -117,10 +119,8 @@ public class MockUPS {
 
                 AmazonUPSProtocol.Res.Builder r = AmazonUPSProtocol.Res.newBuilder();
 
-                System.out.println("ups send: " + c.toString());
                 sendMsgTo(c.build(), socket.getOutputStream());
                 recvMsgFrom(r, socket.getInputStream());
-                // TODO: check ack
                 if(r.getAck(0) == seqNum){
                     seqNum++;
                     System.out.println("ups pick receive correct ack");
@@ -160,7 +160,6 @@ public class MockUPS {
             }
             sendAck(seqs);
 
-            // TODO: send back result
             try{
                 Socket socket = new Socket("localhost", 9999);
                 AmazonUPSProtocol.UAdelivered.Builder delivered = AmazonUPSProtocol.UAdelivered.newBuilder();
@@ -173,10 +172,8 @@ public class MockUPS {
 
                 AmazonUPSProtocol.Res.Builder r = AmazonUPSProtocol.Res.newBuilder();
 
-                System.out.println("ups send: " + c.toString());
                 sendMsgTo(c.build(), socket.getOutputStream());
                 recvMsgFrom(r, socket.getInputStream());
-                // TODO: check ack
                 if(r.getAck(0) == seqNum){
                     seqNum++;
                     System.out.println("ups delivery receive correct ack");

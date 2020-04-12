@@ -12,7 +12,6 @@ import java.net.Socket;
  * This thread handle the request coming from out front-end.
  */
 public class DaemonThread extends Thread {
-
     onPurchaseListener listener;
 
     public DaemonThread(onPurchaseListener listener) {
@@ -22,7 +21,7 @@ public class DaemonThread extends Thread {
 
     @Override
     public void run() {
-        // this outermost while loop ensure our server will run "forever"
+        // this outermost while loop ensure our server will runAll "forever"
         // if any exceptions are thrown, go to the catch clause and then will close
         // the serve automatically, next loop, will restart the server
         while (!Thread.currentThread().isInterrupted()){
@@ -49,7 +48,6 @@ public class DaemonThread extends Thread {
     void handlePurchaseRequest(Socket socket) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         PrintWriter writer = new PrintWriter(socket.getOutputStream());
-        System.out.println("new connection from django");
         String req = reader.readLine();
         System.out.println(req);
         long id = Long.parseLong(req);
