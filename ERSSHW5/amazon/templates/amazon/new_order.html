@@ -1,0 +1,56 @@
+{% extends "amazon/base.html" %}
+{% block content %}
+
+  <div class="content-section">
+    <form action="{% url 'buy' %}" method="POST">
+        {% csrf_token %}
+        <br><br>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th scope="col">Description</th>
+                    <th scope="col">Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>apple</td>
+                    <td>
+                        <input name="apple_cnt" type="number" value=0 min="0" max="100"
+                             placeholder="1-100" required>
+                    </td>
+                </tr>
+                <tr>
+                    <td>orange</td>
+                    <td>
+                        <input name="orange_cnt" type="number" value=0 min="0" max="100"
+                             placeholder="1-100" required>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <br><br>
+        <div class="form-group">
+            <label>Shipping address</label>
+            <br>
+            <div>
+                <div>
+                    <label for="x">x coordinate</label>
+                    <input name="x" type="number" placeholder="int"
+                        required>
+                </div>
+
+                <div>
+                    <label for="y">y coordinate</label>
+                    <input name="y" type="number" placeholder="int"
+                        required>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class = "btn btn-outline-info">Buy</button>
+    </form>
+  </div>
+
+{% endblock content %}

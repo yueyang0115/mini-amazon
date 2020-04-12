@@ -25,7 +25,7 @@ SECRET_KEY = '%f5o45o!1jroha1d&oc!d9cbhu3*v&27!3eb@jh_e)!+^!6k3l'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["web", "0.0.0.0", "127.0.0.1"]
+ALLOWED_HOSTS = ["web", "0.0.0.0", "127.0.0.1", 'vcm-12385.vm.duke.edu','local host']
 
 
 # Application definition
@@ -80,7 +80,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'amazon',
         'USER': 'postgres',
-        'PASSWORD': 'postgres',
+        'PASSWORD': 'passw0rd',
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }
@@ -124,3 +124,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+LOGIN_REDIRECT_URL = 'home'
+LOGIN_URL = 'login'
+
