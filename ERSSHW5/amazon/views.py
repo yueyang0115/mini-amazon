@@ -28,7 +28,7 @@ def buy(request):
                 newProduct = Product(item=item, cnt=apple_cnt, package=newPackage)
                 newProduct.save()
 
-            if (apple_cnt != 0):
+            if (orange_cnt != 0):
                 # item = Item.objects.filter(description="orange").first()
                 # if not item:
                 item = Item(description="orange")
