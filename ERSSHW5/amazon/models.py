@@ -27,6 +27,8 @@ class Package(models.Model):
     # delivered  --- delivered(final state of this package)
     # error      --- any error state(should follow by the actual error message, e.g. error: illegal item)
     status = models.CharField(max_length=100, default="processing")
+    dest_x = models.IntegerField(default=10)
+    dest_y = models.IntegerField(default=10)
 
     def __str__(self):
         return "<" + str(self.warehouse) + ", " + self.status + ">"

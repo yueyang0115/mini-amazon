@@ -16,8 +16,7 @@ public class Package {
     private long id;
     private int whID;
     private int truckID;
-    private int destX;
-    private int destY;
+    private Destination destination;
     private String status;
     private APack pack;
 
@@ -28,9 +27,7 @@ public class Package {
         this.truckID = -1;
         // we will only create the package object after purchase successful, so the initial state should be PROCESSED
         setStatus(PROCESSED);
-        // TODO: fetch the actual data from database
-        this.destX = 10;
-        this.destY = 10;
+        this.destination = new SQL().queryPackageDest(id);
     }
 
     public long getId() {
@@ -58,19 +55,11 @@ public class Package {
     }
 
     public int getDestX() {
-        return destX;
-    }
-
-    public void setDestX(int destX) {
-        this.destX = destX;
+        return destination.getX();
     }
 
     public int getDestY() {
-        return destY;
-    }
-
-    public void setDestY(int destY) {
-        this.destY = destY;
+        return destination.getY();
     }
 
     public String getStatus() {
@@ -79,11 +68,6 @@ public class Package {
 
     public APack getPack() {
         return pack;
-    }
-
-    public void setDest(int x, int y){
-        this.destX = x;
-        this.destY = y;
     }
 
     /**

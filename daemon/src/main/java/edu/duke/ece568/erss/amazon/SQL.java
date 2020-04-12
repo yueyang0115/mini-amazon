@@ -14,7 +14,6 @@ public class SQL {
     private static final String dbUser = "postgres";
     private static final String dbPassword = "postgres";
 
-
     public SQL() {
 
     }
@@ -107,25 +106,29 @@ public class SQL {
         return false;
     }
 
-    public Destination queryPackageDest(long packageID) throws SQLException, ClassNotFoundException {
-        Class.forName("org.postgresql.Driver");
-        Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-        conn.setAutoCommit(false);
-
-        Statement statement = conn.createStatement();
-        // TODO: change the sql here to query the destination
-        ResultSet result = statement.executeQuery(String.format(
-                "SELECT destX, destY FROM %s WHERE id = %d;",
-                TABLE_PACKAGE, packageID)
-        );
-
+    public Destination queryPackageDest(long packageID) {
         Destination destination = null;
-        if (result.next()){
-            destination = new Destination(result.getInt("destX"), result.getInt("destY"));
-        }
+        try {
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+            conn.setAutoCommit(false);
 
-        statement.close();
-        conn.close();
+            Statement statement = conn.createStatement();
+            ResultSet result = statement.executeQuery(String.format(
+                    "SELECT dest_x, dest_y FROM %s WHERE id = %d;",
+                    TABLE_PACKAGE, packageID)
+            );
+
+
+            if (result.next()){
+                destination = new Destination(result.getInt("dest_x"), result.getInt("dest_y"));
+            }
+
+            statement.close();
+            conn.close();
+        }catch (SQLException | ClassNotFoundException e){
+            System.err.println(e.toString());
+        }
         return destination;
     }
 
