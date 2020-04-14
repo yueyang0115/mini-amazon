@@ -54,6 +54,10 @@ public class Package {
         this.truckID = truckID;
     }
 
+    public void setDestination(Destination destination) {
+        this.destination = destination;
+    }
+
     public int getDestX() {
         return destination.getX();
     }

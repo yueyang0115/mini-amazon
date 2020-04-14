@@ -49,7 +49,7 @@ public class DaemonThread extends Thread {
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         PrintWriter writer = new PrintWriter(socket.getOutputStream());
         String req = reader.readLine();
-        System.out.println(req);
+        System.out.println("new buying request: " + req);
         long id = Long.parseLong(req);
         writer.write(String.format("ack:%d", id));
         writer.flush();

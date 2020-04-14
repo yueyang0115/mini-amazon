@@ -22,8 +22,8 @@ public class MockUPS {
     public long worldID;
     public int truckID;
 
-    private InputStream in;
-    private OutputStream out;
+    private final InputStream in;
+    private final OutputStream out;
     private long seqNum;
 
     public MockUPS() throws IOException {
@@ -53,14 +53,21 @@ public class MockUPS {
     }
 
     public boolean connectToWorld(long worldID) {
+        // init two trucks
         UInitTruck.Builder builder = UInitTruck.newBuilder();
         builder.setId(1);
         builder.setX(2);
         builder.setY(2);
 
+        UInitTruck.Builder builder1 = UInitTruck.newBuilder();
+        builder1.setId(2);
+        builder1.setX(1);
+        builder1.setY(1);
+
         UConnect.Builder connect =  UConnect.newBuilder();
         connect.setIsAmazon(false);
         connect.addTrucks(builder);
+        connect.addTrucks(builder1);
         if (worldID >= 0){
             connect.setWorldid(worldID);
         }
@@ -68,6 +75,7 @@ public class MockUPS {
         UConnected.Builder connected = UConnected.newBuilder();
 
         sendMsgTo(connect.build(), out);
+        seqNum++;
         recvMsgFrom(connected, in);
 
         this.worldID = connected.getWorldid();
@@ -77,127 +85,127 @@ public class MockUPS {
         return connected.getResult().equals("connected!");
     }
 
-    public void pick(int whID, long packageID){
-        new Thread(() -> {
-            UCommands.Builder command = UCommands.newBuilder();
+    public synchronized void pick(int whID, long packageID){
+        UCommands.Builder command = UCommands.newBuilder();
 
-            UGoPickup.Builder pick = UGoPickup.newBuilder();
-            pick.setWhid(whID);
-            pick.setTruckid(truckID);
-            pick.setSeqnum(seqNum);
-            command.addPickups(pick);
+        UGoPickup.Builder pick = UGoPickup.newBuilder();
+        pick.setWhid(whID);
+        pick.setTruckid(packageID % 2 == 0 ? 1 : 2);
+        pick.setSeqnum(seqNum);
+        command.addPickups(pick);
 
-            UResponses.Builder responses = UResponses.newBuilder();
+        UResponses.Builder responses = UResponses.newBuilder();
 
-            sendMsgTo(command.build(), out);
-            recvMsgFrom(responses, in);
-            System.out.println(responses.toString());
+        sendMsgTo(command.build(), out);
+        seqNum++;
+        recvMsgFrom(responses, in);
+        System.out.println(responses.toString());
 
-            if (responses.getCompletionsCount() == 0){
-                responses.clear();
+        if (responses.getCompletionsCount() == 0){
+            responses.clear();
+            synchronized (in) {
                 recvMsgFrom(responses, in);
-                System.out.println(responses.toString());
             }
-            seqNum++;
+            System.out.println(responses.toString());
+        }
 
-            List<Long> seqs = new ArrayList<>();
-            for (UFinished finished : responses.getCompletionsList()){
-                seqs.add(finished.getSeqnum());
+
+        List<Long> seqs = new ArrayList<>();
+        for (UFinished finished : responses.getCompletionsList()){
+            seqs.add(finished.getSeqnum());
+        }
+        sendAck(seqs);
+
+        try{
+            Socket socket = new Socket("localhost", 9999);
+            AmazonUPSProtocol.UApicked.Builder picked = AmazonUPSProtocol.UApicked.newBuilder();
+
+            picked.setSeqnum(seqNum);
+            picked.setShipid(packageID);
+            picked.setTruckid(packageID % 2 == 0 ? 1 : 2);
+
+            AmazonUPSProtocol.UAcommand.Builder c = AmazonUPSProtocol.UAcommand.newBuilder();
+            c.addPick(picked);
+
+            AmazonUPSProtocol.Res.Builder r = AmazonUPSProtocol.Res.newBuilder();
+
+            sendMsgTo(c.build(), socket.getOutputStream());
+            recvMsgFrom(r, socket.getInputStream());
+            if(r.getAck(0) == seqNum){
+                seqNum++;
+                System.out.println("ups pick receive correct ack");
             }
-            sendAck(seqs);
-
-            try{
-                Socket socket = new Socket("localhost", 9999);
-                AmazonUPSProtocol.UApicked.Builder picked = AmazonUPSProtocol.UApicked.newBuilder();
-
-                picked.setSeqnum(seqNum);
-                picked.setShipid(packageID);
-                picked.setTruckid(1);
-
-                AmazonUPSProtocol.UAcommand.Builder c = AmazonUPSProtocol.UAcommand.newBuilder();
-                c.addPick(picked);
-
-                AmazonUPSProtocol.Res.Builder r = AmazonUPSProtocol.Res.newBuilder();
-
-                sendMsgTo(c.build(), socket.getOutputStream());
-                recvMsgFrom(r, socket.getInputStream());
-                if(r.getAck(0) == seqNum){
-                    seqNum++;
-                    System.out.println("ups pick receive correct ack");
-                }
-            }catch (IOException e){
-                System.err.println(e.toString());
-            }
-        }).start();
+        }catch (IOException e){
+            System.err.println(e.toString());
+        }
     }
 
-    public void delivery(int destX, int destY, long packageID){
-        new Thread(() -> {
-            UCommands.Builder command = UCommands.newBuilder();
+    public synchronized void delivery(int destX, int destY, long packageID){
+        UCommands.Builder command = UCommands.newBuilder();
 
-            UGoDeliver.Builder delivery = UGoDeliver.newBuilder();
-            delivery.setTruckid(truckID);
-            delivery.addPackages(UDeliveryLocation.newBuilder().setPackageid(packageID).setX(destX).setY(destY));
-            delivery.setSeqnum(seqNum);
-            command.addDeliveries(delivery);
+        UGoDeliver.Builder delivery = UGoDeliver.newBuilder();
+        delivery.setTruckid(packageID % 2 == 0 ? 1 : 2);
+        delivery.addPackages(UDeliveryLocation.newBuilder().setPackageid(packageID).setX(destX).setY(destY));
+        delivery.setSeqnum(seqNum);
+        command.addDeliveries(delivery);
 
-            UResponses.Builder responses = UResponses.newBuilder();
+        UResponses.Builder responses = UResponses.newBuilder();
 
-            sendMsgTo(command.build(), out);
+        sendMsgTo(command.build(), out);
+        seqNum++;
+        recvMsgFrom(responses, in);
+        System.out.println(responses.toString());
+
+        if (responses.getDeliveredCount() == 0){
+            responses.clear();
             recvMsgFrom(responses, in);
             System.out.println(responses.toString());
+        }
 
-            if (responses.getDeliveredCount() == 0){
-                responses.clear();
-                recvMsgFrom(responses, in);
-                System.out.println(responses.toString());
+        List<Long> seqs = new ArrayList<>();
+        for (UDeliveryMade d : responses.getDeliveredList()){
+            seqs.add(d.getSeqnum());
+        }
+        sendAck(seqs);
+
+        try{
+            Socket socket = new Socket("localhost", 9999);
+            AmazonUPSProtocol.UAdelivered.Builder delivered = AmazonUPSProtocol.UAdelivered.newBuilder();
+
+            delivered.setSeqnum(seqNum);
+            delivered.setShipid(packageID);
+
+            AmazonUPSProtocol.UAcommand.Builder c = AmazonUPSProtocol.UAcommand.newBuilder();
+            c.addDeliver(delivered);
+
+            AmazonUPSProtocol.Res.Builder r = AmazonUPSProtocol.Res.newBuilder();
+
+            sendMsgTo(c.build(), socket.getOutputStream());
+            recvMsgFrom(r, socket.getInputStream());
+            if(r.getAck(0) == seqNum){
+                seqNum++;
+                System.out.println("ups delivery receive correct ack");
             }
-            seqNum++;
-
-            List<Long> seqs = new ArrayList<>();
-            for (UDeliveryMade d : responses.getDeliveredList()){
-                seqs.add(d.getSeqnum());
-            }
-            sendAck(seqs);
-
-            try{
-                Socket socket = new Socket("localhost", 9999);
-                AmazonUPSProtocol.UAdelivered.Builder delivered = AmazonUPSProtocol.UAdelivered.newBuilder();
-
-                delivered.setSeqnum(seqNum);
-                delivered.setShipid(packageID);
-
-                AmazonUPSProtocol.UAcommand.Builder c = AmazonUPSProtocol.UAcommand.newBuilder();
-                c.addDeliver(delivered);
-
-                AmazonUPSProtocol.Res.Builder r = AmazonUPSProtocol.Res.newBuilder();
-
-                sendMsgTo(c.build(), socket.getOutputStream());
-                recvMsgFrom(r, socket.getInputStream());
-                if(r.getAck(0) == seqNum){
-                    seqNum++;
-                    System.out.println("ups delivery receive correct ack");
-                }
-            }catch (IOException e){
-                System.err.println(e.toString());
-            }
-        }).start();
+        }catch (IOException e){
+            System.err.println(e.toString());
+        }
     }
 
-    public void disconnect(){
+    public synchronized void disconnect(){
         UCommands.Builder command = UCommands.newBuilder();
         command.setDisconnect(true);
 
         UResponses.Builder responses = UResponses.newBuilder();
 
         sendMsgTo(command.build(), out);
+        seqNum++;
         recvMsgFrom(responses, in);
         System.out.println(responses.toString());
 
         if (responses.hasFinished()){
             System.out.println("ups disconnect finish");
         }
-        seqNum++;
+
     }
 
     void sendAck(List<Long> seqs){
