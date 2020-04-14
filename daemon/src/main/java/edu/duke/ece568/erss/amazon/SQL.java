@@ -7,7 +7,7 @@ public class SQL {
 
     // table name
     private static final String TABLE_ITEM = "amazon_item";
-    private static final String TABLE_PRODUCT = "amazon_product";
+    private static final String TABLE_ORDER = "amazon_ORDER";
     private static final String TABLE_PACKAGE = "amazon_package";
     // database configuration
     private static final String dbUrl = "jdbc:postgresql://localhost:5432/amazon";
@@ -32,11 +32,10 @@ public class SQL {
 
             Statement statement = conn.createStatement();
             ResultSet result = statement.executeQuery(String.format(
-                    "SELECT item.id, item.description, product.cnt " +
-                            "FROM %s AS item, %s AS product " +
-                            "WHERE item.id=product.item_id AND item.id " +
-                            "IN (SELECT item_id FROM %s WHERE package_id = %d);",
-                    TABLE_ITEM, TABLE_PRODUCT, TABLE_PRODUCT, packageID)
+                    "SELECT item.id, item.description, aOrder.cnt " +
+                            "FROM %s AS item, %s AS aOrder " +
+                            "WHERE item.id=aOrder.item_id AND aOrder.package_id = %d;",
+                    TABLE_ITEM, TABLE_ORDER, packageID)
             );
 
             APurchaseMore.Builder purchase = APurchaseMore.newBuilder();
@@ -132,9 +131,11 @@ public class SQL {
         return destination;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException, ClassNotFoundException {
         SQL sql = new SQL();
-        System.out.println(sql.queryPackage(2));
+        System.out.println(sql.queryPackage(5));
+        System.out.println(sql.queryWHNum(5));
+        System.out.println(sql.queryPackageDest(5));
     }
 }
 

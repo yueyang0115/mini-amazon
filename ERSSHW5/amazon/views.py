@@ -22,36 +22,27 @@ def buy(request):
 
         if apple_cnt != 0 or orange_cnt != 0:
             # create a new package
-            new_package = Package(dest_x=dest_x, dest_y=dest_y)
+            new_package = Package(owner=request.user, dest_x=dest_x, dest_y=dest_y)
             new_package.save()
 
             if apple_cnt != 0:
-                item = Item.objects.filter(description="apple").first()
-                if item is not None:
-                    product1 = Product(item=item, cnt=apple_cnt)
-                    product1.save()
-                    new_package.products.add(product1)
-                else:
-                    # TODO: maybe show some error message
-                    print("no apple in DB")
-                # if not item:
-                # item = Item(description="apple")
-                # item.save()
-                # newProduct = Product(item=item, cnt=apple_cnt, package=new_package)
-                # newProduct.save()
+                # NOTE: this may throw and NotExist exception
+                apple = Item.objects.get(description="apple")
+                # create will call save automatically
+                new_package.orders.create(
+                    owner=request.user,
+                    item=apple,
+                    cnt=apple_cnt
+                )
 
             if orange_cnt != 0:
-                item = Item.objects.filter(description="orange").first()
-                if not item:
-                    product2 = Product(item=item, cnt=orange_cnt)
-                    product2.save()
-                    new_package.products.add(product2)
-                else:
-                    # TODO: maybe show some error message
-                    print("no apple in DB")
-                # item = Item(description="orange")
-                # item.save()
-                # newProduct = Product(item=item, cnt=orange_cnt, package=new_package)
-                # newProduct.save()
+                orange = Item.objects.get(description="orange")
+                # create will call save automatically
+                new_package.orders.create(
+                    owner=request.user,
+                    item=orange,
+                    cnt=orange_cnt
+                )
+            print("create new package: " + str(new_package.id))
             purchase(package_id=new_package.id)
     return render(request, 'amazon/success.html')

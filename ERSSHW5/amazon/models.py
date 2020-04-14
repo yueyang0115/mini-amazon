@@ -1,6 +1,5 @@
+from django.contrib.auth.models import User
 from django.db import models
-from users.models import Profile
-from datetime import datetime
 from django.utils.timezone import now
 
 # Create your models here.
@@ -35,7 +34,7 @@ class Item(models.Model):
 # each package can contains several products(e.g. package.products.all())
 class Package(models.Model):
     # user info
-    owner = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="packages")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="packages")
     # the warehouse id where this package stores
     warehouse = models.IntegerField(default=1)
     # the status of current package, possible value:
@@ -61,7 +60,7 @@ class Package(models.Model):
 # each product should belong to one package
 class Order(models.Model):
     # user info
-    owner = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="orders")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
     item = models.ForeignKey(Item, on_delete=models.SET_NULL, null=True)
     cnt = models.IntegerField(default=1)
     # package id

@@ -77,7 +77,7 @@ public class MockUPS {
         return connected.getResult().equals("connected!");
     }
 
-    public void pick(int whID){
+    public void pick(int whID, long packageID){
         new Thread(() -> {
             UCommands.Builder command = UCommands.newBuilder();
 
@@ -111,7 +111,7 @@ public class MockUPS {
                 AmazonUPSProtocol.UApicked.Builder picked = AmazonUPSProtocol.UApicked.newBuilder();
 
                 picked.setSeqnum(seqNum);
-                picked.setShipid(2);
+                picked.setShipid(packageID);
                 picked.setTruckid(1);
 
                 AmazonUPSProtocol.UAcommand.Builder c = AmazonUPSProtocol.UAcommand.newBuilder();
@@ -165,7 +165,7 @@ public class MockUPS {
                 AmazonUPSProtocol.UAdelivered.Builder delivered = AmazonUPSProtocol.UAdelivered.newBuilder();
 
                 delivered.setSeqnum(seqNum);
-                delivered.setShipid(2);
+                delivered.setShipid(packageID);
 
                 AmazonUPSProtocol.UAcommand.Builder c = AmazonUPSProtocol.UAcommand.newBuilder();
                 c.addDeliver(delivered);

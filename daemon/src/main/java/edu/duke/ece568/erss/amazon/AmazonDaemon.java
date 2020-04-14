@@ -155,7 +155,7 @@ public class AmazonDaemon {
         daemonThread = new DaemonThread(packageID -> {
             // use thread pool communicate with the world
             threadPool.execute(() -> {
-                System.out.println("Receive new buying request");
+                System.out.println(String.format("Receive new buying request, id: %d", packageID));
                 // 1. retrieve the package info from DB
                 APurchaseMore.Builder newPackage = new SQL().queryPackage(packageID);
                 newPackage.setSeqnum(seqNum);
@@ -260,7 +260,7 @@ public class AmazonDaemon {
      */
     void checkPackageID(long packageID){
         if (!packageMap.containsKey(packageID)){
-            throw new IllegalArgumentException("invalid package id");
+            throw new IllegalArgumentException("invalid package id: " + packageID);
         }
     }
 
@@ -306,7 +306,7 @@ public class AmazonDaemon {
                 send(command.build());
             }else {
                 // TODO: debug info
-                ups.pick(p.getWhID());
+                ups.pick(p.getWhID(), packageID);
                 p.setTruckID(ups.truckID);
             }
         });
