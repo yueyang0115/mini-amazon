@@ -18,7 +18,8 @@ import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
  * 4. a full process will contain "purchase(world) ---> pack(world) & pick(UPS) ---> load(world) ---> deliver(UPS)"
  */
 public class AmazonDaemon {
-    private static final String HOST = "vcm-13663.vm.duke.edu";
+    // private static final String HOST = "vcm-13663.vm.duke.edu";
+    private static final String HOST = "vcm-14299.vm.duke.edu";
     private static final int PORT = 23456;
     // the default timeout for each request
     // i.e. resend request if don't receive ack within TIME_OUT
@@ -43,7 +44,7 @@ public class AmazonDaemon {
     private List<AInitWarehouse> warehouses;
 
     public AmazonDaemon() throws IOException {
-        ups = new MockUPS();
+        // ups = new MockUPS();
         this.seqNum = 0;
         // set up the TCP connection to the world(not connected yet)
         Socket socket = new Socket(HOST, PORT);
@@ -74,7 +75,7 @@ public class AmazonDaemon {
      */
     public void config() throws IOException {
         // TODO: debug info
-        ups.init();
+        // ups.init();
 
         System.out.println("Daemon is running...");
         System.out.println("Listening connection from UPS at 9999");
@@ -131,7 +132,7 @@ public class AmazonDaemon {
                 System.out.println("try to connect to daemon server");
                 Socket socket = new Socket("localhost", 8888);
                 PrintWriter out = new PrintWriter(socket.getOutputStream());
-                out.write("4\n");
+                out.write("3\n");
                 out.flush();
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 System.out.println("receive confirm from amazon: " + in.readLine());
@@ -140,7 +141,7 @@ public class AmazonDaemon {
                 Thread.sleep(3000);
                 Socket socket1 = new Socket("localhost", 8888);
                 PrintWriter out1 = new PrintWriter(socket1.getOutputStream());
-                out1.write("5\n");
+                out1.write("2\n");
                 out1.flush();
                 BufferedReader in1 = new BufferedReader(new InputStreamReader(socket1.getInputStream()));
                 System.out.println("receive confirm from amazon: " + in1.readLine());
@@ -213,6 +214,8 @@ public class AmazonDaemon {
                         recvMsgFrom(command, socket.getInputStream());
                         System.out.println("receive from ups:");
                         System.out.println(command);
+			// send back ack
+                        sendAck(command.build(), socket.getOutputStream());
                         // check all trucks which arrive
                         for (UApicked p : command.getPickList()){
                             System.out.println("actually picked: " + p.getShipid());
@@ -225,8 +228,6 @@ public class AmazonDaemon {
                             // set the package delivered and remove it from the map(don't care anymore)
                             delivered(d.getShipid());
                         }
-                        // send back ack
-                        sendAck(command.build(), socket.getOutputStream());
                     }catch (Exception e){
                         System.err.println(e.toString());
                     }
@@ -300,7 +301,7 @@ public class AmazonDaemon {
         checkPackageID(packageID);
         Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
-            if (false){
+            if (true){
                 AUpick.Builder pick = AUpick.newBuilder();
                 pick.setPackage(p.getPack());
                 pick.setSeqnum(getSeqNum());
@@ -350,7 +351,7 @@ public class AmazonDaemon {
         Package p = packageMap.get(packageID);
         p.setStatus(Package.DELIVERING);
         threadPool.execute(() -> {
-            if (false){
+            if (true){
                 AUdeliver.Builder deliver = AUdeliver.newBuilder();
                 deliver.setPackage(p.getPack());
                 deliver.setSeqnum(getSeqNum());
@@ -530,7 +531,7 @@ public class AmazonDaemon {
      */
     void sendToUPS(AUcommand command){
         try {
-            Socket socket = new Socket("localhost", 1111);
+            Socket socket = new Socket("vcm-14299.vm.duke.edu", 54321);
             InputStream inputStream = socket.getInputStream();
             OutputStream outputStream = socket.getOutputStream();
 

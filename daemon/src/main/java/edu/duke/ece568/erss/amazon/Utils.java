@@ -21,6 +21,7 @@ public class Utils {
             byte[] data = msg.toByteArray();
             CodedOutputStream codedOutputStream = CodedOutputStream.newInstance(out);
             codedOutputStream.writeUInt32NoTag(data.length);
+	    System.out.println("send: " + data.length);
             codedOutputStream.writeRawBytes(data);
             // NOTE!!! always flush the result to stream
             codedOutputStream.flush();
@@ -43,6 +44,7 @@ public class Utils {
         try {
             CodedInputStream codedInputStream = CodedInputStream.newInstance(in);
             int len = codedInputStream.readRawVarint32();
+	    System.out.println("recv: " + len);
             int oldLimit = codedInputStream.pushLimit(len);
             response.mergeFrom(codedInputStream);
             codedInputStream.popLimit(oldLimit);
