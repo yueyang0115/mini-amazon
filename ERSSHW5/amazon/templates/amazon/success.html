@@ -1,4 +1,9 @@
 {% extends "amazon/base.html" %}
 {% block content %}
-<h1>order succeed!</h1>
+    <!-- success page, show success info -->
+    {% if info %}
+        <h1>{{ info }}</h1>
+    {% else %}
+        <h1>Succeed!</h1>
+    {% endif %}
 {% endblock content %}

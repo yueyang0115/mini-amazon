@@ -11,6 +11,7 @@ public class Utils {
     /**
      * This function will "send" the data(should follow Google Protocol Buffer) to corresponding output stream.
      * You should handle the timeout by yourself.
+     *
      * @param msg the message to be send
      * @param out output stream
      * @param <T> generic type of the data
@@ -21,13 +22,13 @@ public class Utils {
             byte[] data = msg.toByteArray();
             CodedOutputStream codedOutputStream = CodedOutputStream.newInstance(out);
             codedOutputStream.writeUInt32NoTag(data.length);
-	    System.out.println("send: " + data.length);
+            System.out.println("send: " + data.length);
             codedOutputStream.writeRawBytes(data);
             // NOTE!!! always flush the result to stream
             codedOutputStream.flush();
             return true;
-        }catch (IOException e){
-            System.err.println(e.toString());
+        } catch (IOException e) {
+            System.err.println("send: " + e.toString());
             return false;
         }
     }
@@ -35,22 +36,23 @@ public class Utils {
     /**
      * This function will only "read" the data from corresponding input stream.
      * You should handle the send back ask by yourself.
+     *
      * @param response response(by reference)
-     * @param in input stream
-     * @param <T> generic type of the response
+     * @param in       input stream
+     * @param <T>      generic type of the response
      * @return true receive successful
      */
     public static <T extends GeneratedMessageV3.Builder<?>> boolean recvMsgFrom(T response, InputStream in) {
         try {
             CodedInputStream codedInputStream = CodedInputStream.newInstance(in);
             int len = codedInputStream.readRawVarint32();
-	    System.out.println("recv: " + len);
+            System.out.println("recv: " + len);
             int oldLimit = codedInputStream.pushLimit(len);
             response.mergeFrom(codedInputStream);
             codedInputStream.popLimit(oldLimit);
             return true;
-        }catch (IOException e){
-            System.err.println(e.toString());
+        } catch (IOException e) {
+            System.err.println("recv: " + e.toString());
             return false;
         }
     }

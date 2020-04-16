@@ -24,7 +24,7 @@ class Item(models.Model):
     description = models.CharField(max_length=100, blank=False)
     # below are some values we might want for advance feature(we can add more)
     price = models.FloatField(default=1.0)
-    img = models.CharField(max_length=50, default="../img/sample.jpg")
+    img = models.CharField(max_length=50, default="/static/img/sample.jpg")
 
     def __str__(self):
         return self.description

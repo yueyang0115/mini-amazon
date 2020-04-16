@@ -1,5 +1,6 @@
 package edu.duke.ece568.erss.amazon;
 
+import edu.duke.ece568.erss.amazon.listener.onPurchaseListener;
 import edu.duke.ece568.erss.amazon.proto.AmazonUPSProtocol.*;
 import edu.duke.ece568.erss.amazon.proto.WorldAmazonProtocol.*;
 
@@ -210,26 +211,9 @@ public class AmazonDaemon {
             if (socket != null){
                 threadPool.execute(() -> {
                     try {
-                        UAcommand.Builder command = UAcommand.newBuilder();
-                        recvMsgFrom(command, socket.getInputStream());
-                        System.out.println("receive from ups:");
-                        System.out.println(command);
-			// send back ack
-                        sendAck(command.build(), socket.getOutputStream());
-                        // check all trucks which arrive
-                        for (UApicked p : command.getPickList()){
-                            System.out.println("actually picked: " + p.getShipid());
-                            // update package truck id and tell it to load
-                            picked(p.getShipid(), p.getTruckid());
-                        }
-                        // check all packages which is delivered
-                        for (UAdelivered d : command.getDeliverList()){
-                            System.out.println("actually delivered: " + d.getShipid());
-                            // set the package delivered and remove it from the map(don't care anymore)
-                            delivered(d.getShipid());
-                        }
-                    }catch (Exception e){
-                        System.err.println(e.toString());
+                        recvFromUPS(socket.getInputStream(), socket.getOutputStream());
+                    } catch (IOException e) {
+                        System.err.println("runUPSServer: " + e.toString());
                     }
                 });
             }
@@ -449,11 +433,7 @@ public class AmazonDaemon {
         ACommands.Builder command = ACommands.newBuilder();
         command.setDisconnect(true);
 
-//        AResponses.Builder responses = AResponses.newBuilder();
-
         AResponses.Builder res = send(command);
-//        sendMsgTo(command.build(), out);
-//        recvMsgFrom(responses, in);
         System.out.println(res.toString());
 
         if (res.hasFinished()){
@@ -471,7 +451,7 @@ public class AmazonDaemon {
      * @param command the incoming command you want to ack
      * @param outputStream output stream
      */
-    void sendAck(UAcommand command, OutputStream outputStream){
+    synchronized void sendAck(UAcommand command, OutputStream outputStream){
         List<Long> seqs = new ArrayList<>();
         for (UApicked a : command.getPickList()){
             seqs.add(a.getSeqnum());
@@ -529,8 +509,9 @@ public class AmazonDaemon {
      * This function will send the AUcommand to UPS and receive an ack.
      * @param command AUcommand
      */
-    void sendToUPS(AUcommand command){
+    synchronized void sendToUPS(AUcommand command){
         try {
+            System.out.println("amazon sending(to UPS): " + command.toString());
             Socket socket = new Socket("vcm-14299.vm.duke.edu", 54321);
             InputStream inputStream = socket.getInputStream();
             OutputStream outputStream = socket.getOutputStream();
@@ -547,14 +528,47 @@ public class AmazonDaemon {
 
             while (true){
                 recvMsgFrom(r, inputStream);
-                if(r.getAck(r.getAckCount() - 1) == seqNum - 1){
+                // print out any error message
+                if (r.getErrCount() > 0){
+                    for (Err err : r.getErrList()){
+                        System.out.println(err.toString());
+                    }
+                }
+                List<Long> acks = r.getAckList();
+                acks.sort(Long::compareTo);
+                if(acks.get(acks.size() - 1) == seqNum - 1){
                     timer.cancel();
                     break;
                 }
                 r.clear();
             }
         }catch (Exception e){
-            System.err.println(e.toString());
+            System.err.println("sendToUPS: " + e.toString());
+        }
+    }
+
+    void recvFromUPS(InputStream inputStream, OutputStream outputStream){
+        try {
+            UAcommand.Builder command = UAcommand.newBuilder();
+            recvMsgFrom(command, inputStream);
+            System.out.println("receive from ups:");
+            System.out.println(command);
+            // send back ack, once receive
+            sendAck(command.build(), outputStream);
+            // check all trucks which arrive
+            for (UApicked p : command.getPickList()){
+                System.out.println("actually picked: package " + p.getShipid());
+                // update package truck id and tell it to load
+                picked(p.getShipid(), p.getTruckid());
+            }
+            // check all packages which is delivered
+            for (UAdelivered d : command.getDeliverList()){
+                System.out.println("actually delivered: package " + d.getShipid());
+                // set the package delivered and remove it from the map(don't care anymore)
+                delivered(d.getShipid());
+            }
+        }catch (Exception e){
+            System.err.println("runUPSServer: " + e.toString());
         }
     }
 
@@ -574,7 +588,7 @@ public class AmazonDaemon {
      * @return AResponse object, in case the response contains something other than ack
      */
     synchronized AResponses.Builder send(ACommands.Builder commands){
-        System.out.println("amazon sending: " + commands.toString());
+        System.out.println("amazon sending(to world): " + commands.toString());
         // if not receive the ack within 10s, it will resend the message
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
