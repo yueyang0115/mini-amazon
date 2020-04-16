@@ -1,0 +1,38 @@
+{% extends "amazon/base.html" %}
+{% block content %}
+    <div class="content-section">
+        <div class="table-responsive mt-4 border-bottom table-hover">
+        {% if product_list %}
+            <br>
+            <table class="table">
+                <thead>
+                    <tr class="row">
+                        <th class="col-4 text-center">Description</th>
+                        <th class="col-2 text-center">Count</th>
+                        <th class="col-2 text-center">Price</th>
+                        <th class="col-2 text-center">Total</th>>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for prod in product_list %}
+                    <tr class="row">
+                        <td class="col-4 text-left">
+                                <img class="img-thumbnail" style="width: 50px; height: 50px" src="{{ prod.item.img }}">
+                                {{ prod.item.description }}
+                        </td>>
+                        <td class="col-2 text-center">{{prod.item}}</td>
+                        <td class="col-2 text-center">{{prod.cnt}}</td>
+                        <td class="col-2 text-center">{{prod.item.price }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+        </div>
+
+        <br>
+        <a href = "/listpackage" class = "btn btn-outline-info" >Back</a>
+    </div>
+
+{% endblock content %}

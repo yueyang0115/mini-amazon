@@ -85,7 +85,7 @@ def shop_cart(request):
 def new_order(request):
     return render(request, 'amazon/new_order.html')
 
-
+@login_required
 def buy(request):
     if request.method == 'POST':
         apple_cnt = request.POST['apple_cnt']
@@ -119,3 +119,17 @@ def buy(request):
             print("create new package: " + str(new_package.id))
             purchase(package_id=new_package.id)
     return render(request, 'amazon/success.html', {"info": "Order successful!"})
+
+@login_required
+def list_package(request):
+    context = {
+        'package_list': Package.objects.filter(owner=request.user).order_by('creation_time')
+    }
+    return render(request, 'amazon/list_package.html', context)
+
+@login_required
+def list_package_detail(request, package_id):
+    context = {
+        'product_list': Order.objects.filter(package__id = package_id)
+    }
+    return render(request, 'amazon/list_package_detail.html', context)

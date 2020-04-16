@@ -1,0 +1,46 @@
+{% extends "amazon/base.html" %}
+{% block content %}
+    <div class="content-section">
+        <div class="media">
+            <div class="media-body">
+                <h2 class="account-heading">{{ user.username }}</h2>
+                <p class="text-secondary">{{ user.email }}</p>
+            </div>
+        </div>
+        <legend>Your Orders</legend>
+
+        <div class="table-responsive mt-4 border-bottom table-hover">
+            {% if package_list %}
+
+            <table class="table">
+                <thead>
+                    <tr class="row">
+                        <!-- thumbnail -->
+                        <th class="col-1 text-center">#</th>
+                        <th class="col-2 text-center">Status</th>
+                        <th class="col-3 text-center">Creation_time</th>
+                        <th class="col-2 text-center">Total Price</th>
+                        <th class="col-4 text-center">Items</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pack in package_list %}
+                        <tr class="row text-center">
+                            <td class="col-1">{{pack.id}}</td>
+                            <td class="col-2">{{pack.status}}</td>
+                            <td class="col-3">{{pack.creation_time}}</td>
+                            <td class="col-2">null</td>
+                            <td class="col-4 text-left">
+
+                                <a href="/listpackage/{{ pack.id }}/"> View Detail</a>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% endif %}
+        </div>
+    </div>>
+{% endblock content %}
