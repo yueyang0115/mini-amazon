@@ -24,7 +24,7 @@
                     {% for order in orders %}
                         <tr class="row text-center border-bottom">
                             <td class="col-1 align-self-center border-top-0">
-                                <input class="form-check-input" type="checkbox" value="" id="check">
+                                <input class="form-check-input" type="checkbox" value="{{ order.id }}" name="checked_orders">
                                 <label class="form-check-label" for="check"> {{ forloop.counter }}</label>
                             </td>
                             <td class="col-3 text-left border-top-0">

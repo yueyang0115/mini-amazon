@@ -79,9 +79,16 @@ def shop_cart(request):
         operation = request.POST["operation"]
         if operation == "delete":
             oid = request.POST["order_id"]
-            orders.get(pk=int(oid)).delete()
+            orders.get(pk=oid).delete()
         elif operation == "checkout":
-            print("checkout")
+            # get all checked orders
+            checked_orders = request.POST.getlist("checked_orders")
+            # TODO: create a new package, purchase and return to successful page
+            pack = Package(owner=request.user, warehouse=1)
+            for o in checked_orders:
+                pack.orders.add(orders.get(pk=o))
+                print(orders.get(pk=o))
+            print(checked_orders)
     total = 0
     for o in orders:
         total += o.total()
