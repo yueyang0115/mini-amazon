@@ -40,9 +40,16 @@ def item_detail(request, item_id):
             return redirect(reverse("checkout", kwargs={'package_id': package.id}))
         else:
             print("user add thing" + str(cnt))
-            # create a new order
-            order = Order(owner=request.user, item=item, cnt=cnt)
-            order.save()
+            try:
+                exist_order = Order.objects.get(owner=request.user, item=item, package__isnull=True)
+                exist_order.cnt += cnt
+                exist_order.save()
+                print("existing order")
+            except Order.DoesNotExist:
+                # create a new order
+                order = Order(owner=request.user, item=item, cnt=cnt)
+                order.save()
+                print("create new order")
             context["info"] = "Successfully add to cart."
             return render(request, "amazon/success.html", context)
     else:
@@ -63,6 +70,16 @@ def checkout(request, package_id):
     else:
         context["package"] = package
         return render(request, "amazon/checkout.html", context)
+
+
+@login_required
+def shop_cart(request):
+    orders = Order.objects.filter(owner=request.user).filter(package__isnull=True)
+    total = 0
+    for o in orders:
+        total += o.total()
+    context = {"orders": orders, "total": total}
+    return render(request, "amazon/shopping_cart.html", context)
 
 
 def new_order(request):

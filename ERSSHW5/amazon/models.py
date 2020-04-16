@@ -66,6 +66,10 @@ class Order(models.Model):
     # package id
     package = models.ForeignKey(Package, on_delete=models.CASCADE, related_name="orders", null=True, blank=True)
 
+    # return the total price for current order
+    def total(self):
+        return self.cnt * self.item.price
+
     def __str__(self):
         return "<" + str(self.package_id) + ", <" + str(self.item_id) + ', ' + str(self.cnt) + ">>"
 
