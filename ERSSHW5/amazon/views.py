@@ -75,6 +75,13 @@ def checkout(request, package_id):
 @login_required
 def shop_cart(request):
     orders = Order.objects.filter(owner=request.user).filter(package__isnull=True)
+    if request.method == 'POST':
+        operation = request.POST["operation"]
+        if operation == "delete":
+            oid = request.POST["order_id"]
+            orders.get(pk=int(oid)).delete()
+        elif operation == "checkout":
+            print("checkout")
     total = 0
     for o in orders:
         total += o.total()
