@@ -89,6 +89,8 @@ def shop_cart(request):
                 pack.orders.add(orders.get(pk=o))
                 print(orders.get(pk=o))
             print(checked_orders)
+            # return redirect(reverse("checkout", kwargs={'package_id': package.id}))
+            return redirect(reverse("checkout", kwargs={'package_id': 3}))
     total = 0
     for o in orders:
         total += o.total()
