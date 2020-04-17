@@ -63,11 +63,17 @@ def checkout(request, package_id):
     context = {}
     # actually checkout
     if request.method == "POST":
-        # TODO: get the destination info and credit card
+        x = request.POST["x"]
+        y = request.POST["y"]
+        package.dest_x = x
+        package.dest_y = y
+        package.save()
+        print(package.dest_x + "  " + package.dest_y)
         print("checkout!")
         context["info"] = "Purchase successful."
         return render(request, "amazon/success.html", context)
     else:
+        context["total"] = package.total()
         context["package"] = package
         return render(request, "amazon/checkout.html", context)
 
@@ -75,6 +81,22 @@ def checkout(request, package_id):
 @login_required
 def shop_cart(request):
     orders = Order.objects.filter(owner=request.user).filter(package__isnull=True)
+    if request.method == 'POST':
+        operation = request.POST["operation"]
+        if operation == "delete":
+            oid = request.POST["order_id"]
+            orders.get(pk=oid).delete()
+        elif operation == "checkout":
+            # get all checked orders
+            checked_orders = request.POST.getlist("checked_orders")
+            # TODO: create a new package, purchase and return to successful page
+            pack = Package(owner=request.user, warehouse=1)
+            for o in checked_orders:
+                pack.orders.add(orders.get(pk=o))
+                print(orders.get(pk=o))
+            print(checked_orders)
+            # return redirect(reverse("checkout", kwargs={'package_id': package.id}))
+            return redirect(reverse("checkout", kwargs={'package_id': 3}))
     total = 0
     for o in orders:
         total += o.total()
