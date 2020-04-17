@@ -90,14 +90,20 @@ def shop_cart(request):
         elif operation == "checkout":
             # get all checked orders
             checked_orders = request.POST.getlist("checked_orders")
-            # TODO: create a new package, purchase and return to successful page
-            pack = Package(owner=request.user, warehouse=1)
-            for o in checked_orders:
-                pack.orders.add(orders.get(pk=o))
-                print(orders.get(pk=o))
             print(checked_orders)
+            # TODO: create a new package, purchase and return to successful page
+            # pack = Package(owner=request.user, warehouse=1)
+            for o in checked_orders:
+                # pack.orders.add(orders.get(pk=o))
+                print(orders.get(pk=o))
             # return redirect(reverse("checkout", kwargs={'package_id': package.id}))
             return redirect(reverse("checkout", kwargs={'package_id': 3}))
+        elif operation == "cal_total" and request.is_ajax():
+            checked_orders = request.POST.getlist("checked_orders")
+            total = 0.0
+            for o in checked_orders:
+                total += orders.get(pk=o).total()
+            return JsonResponse({"total_cart": ("%.2f" % total)})
     total = 0
     for o in orders:
         total += o.total()
