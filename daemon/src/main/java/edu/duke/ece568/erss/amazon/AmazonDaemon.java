@@ -1,6 +1,5 @@
 package edu.duke.ece568.erss.amazon;
 
-import edu.duke.ece568.erss.amazon.listener.onPurchaseListener;
 import edu.duke.ece568.erss.amazon.proto.AmazonUPSProtocol.*;
 import edu.duke.ece568.erss.amazon.proto.WorldAmazonProtocol.*;
 
@@ -20,11 +19,13 @@ import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
  */
 public class AmazonDaemon {
     // private static final String HOST = "vcm-13663.vm.duke.edu";
-    private static final String HOST = "vcm-14299.vm.duke.edu";
-    private static final int PORT = 23456;
+    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+    private static final int WORLD_PORT = 23456;
     // the default timeout for each request
     // i.e. resend request if don't receive ack within TIME_OUT
     private static final int TIME_OUT = 10000;
+    private static final String UPS_HOST = "vcm-14299.vm.duke.edu";
+    private static final int UPS_PORT = 54321;
 
     // TODO: debug info
     MockUPS ups;
@@ -48,7 +49,7 @@ public class AmazonDaemon {
         // ups = new MockUPS();
         this.seqNum = 0;
         // set up the TCP connection to the world(not connected yet)
-        Socket socket = new Socket(HOST, PORT);
+        Socket socket = new Socket(WORLD_HOST, WORLD_PORT);
         this.in = socket.getInputStream();
         this.out = socket.getOutputStream();
         this.daemonThread = null;
@@ -512,7 +513,7 @@ public class AmazonDaemon {
     synchronized void sendToUPS(AUcommand command){
         try {
             System.out.println("amazon sending(to UPS): " + command.toString());
-            Socket socket = new Socket("vcm-14299.vm.duke.edu", 54321);
+            Socket socket = new Socket(UPS_HOST, UPS_PORT);
             InputStream inputStream = socket.getInputStream();
             OutputStream outputStream = socket.getOutputStream();
 
@@ -588,6 +589,8 @@ public class AmazonDaemon {
      * @return AResponse object, in case the response contains something other than ack
      */
     synchronized AResponses.Builder send(ACommands.Builder commands){
+        // TODO: debug info
+        commands.setSimspeed(1000);
         System.out.println("amazon sending(to world): " + commands.toString());
         // if not receive the ack within 10s, it will resend the message
         Timer timer = new Timer();
