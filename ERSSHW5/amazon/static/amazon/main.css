@@ -120,27 +120,3 @@ a.article-title:hover {
     border: 3px solid #7bc27a;
     transition: all 0.5s linear;
 }
-
-.table13_4 table {
-	width:100%;
-	margin:15px 0;
-	border:0;
-}
-.table13_4 th {
-	font-weight:bold;
-	background-color:#f1f9fd;
-	color:#a1d9f7
-}
-.table13_4,.table13_4 th,.table13_4 td {
-	font-size:0.95em;
-	text-align:center;
-	padding:4px;
-	border-collapse:collapse;
-}
-.table13_4 th,.table13_4 td {
-	border: 1px solid #ffffff;
-	border-width:1px 0 1px 0
-}
-.table13_4 tr {
-	border: 1px solid #ffffff;
-}

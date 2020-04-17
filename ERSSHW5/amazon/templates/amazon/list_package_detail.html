@@ -1,23 +1,16 @@
 {% extends "amazon/base.html" %}
 {% block content %}
-    <div class="content-section">
-        <div>
-            <br>
-            <a class="mr-2" >{{pack.owner.username}} </a>
-            <a class="mr-2" >Created On:</a>
-            <a class="mr-2" >{{pack.creation_time}} </a>
-            <a class="mr-2" >Ship to:</a>
-            <a class="mr-2" >({{pack.dest_x}}, {{pack.dest_y}}) </a>
-            <a class="mr-2" >Total Price:</a>
-            <a class="mr-2" >{{total}}</a>
-        </div>
+    <h3>&nbsp;&nbsp;Order Details</h3>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;Ordered on &nbsp;{{pack.creation_time|date:"F d, Y" }} &nbsp;|&nbsp; Shipping to &nbsp;({{pack.dest_x}}, {{pack.dest_y}})</p>
 
+    <div class="content-section">
         <div class="table-responsive mt-4 border-bottom table-hover">
         {% if product_list %}
             <table class="table">
                 <thead>
                     <tr class="row text-center">
-                        <th class="col-4">Description</th>
+                        <th class="col-1">#</th>
+                        <th class="col-2">Item</th>
                         <th class="col-2">Count</th>
                         <th class="col-2">Price</th>
                         <th class="col-2">Total</th>
@@ -26,11 +19,10 @@
 
                 <tbody>
                 {% for prod in product_list %}
-                    <tr class="row ">
-                        <td class="col-4 text-left">
-                                <img class="img-thumbnail" style="width: 50px; height: 50px" src="{{ prod.item.img }}">
-                                {{ prod.item.description }}
-                        </td>
+                    <tr class="row">
+                        <td class="col-1 text-center">{{ forloop.counter }}</td>
+                            <td class="col-1 text-center"><img class="img-thumbnail" style="width: 50px; height: 50px" src="{{ prod.item.img }}"></td>
+                            <td class="col-1 text-center">{{ prod.item.description }}</td>
                         <td class="col-2 text-center">{{prod.cnt}}</td>
                         <td class="col-2 text-center">&dollar; {{prod.item.price }}</td>
                         <td class="col-2 text-center">&dollar; {{prod.total}}</td>
@@ -43,8 +35,8 @@
             <br>
         </div>
         <div class="row">
-                <div class="col-3 offset-9 text-right mt-4 mb-4">
-                    <b>Total(all items): </b><span style="color: red">&dollar;{{total}}</span>
+                <div class="col-3 offset-6 text-right mt-4 mb-4">
+                    <b>Total(all items): </b><span style="color: #080000">&dollar;{{total}}</span>
                 </div>
         </div>
 

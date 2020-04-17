@@ -1,17 +1,8 @@
 {% extends "amazon/base.html" %}
 {% block content %}
-
-<div class="media">
-            <div class="media-body">
-                <h2 class="account-heading">{{ user.username }}</h2>
-                <p class="text-secondary">{{ user.email }}</p>
-            </div>
-        </div>
-
+    <h3>&nbsp;&nbsp;Your Orders</h3>
+    <br>
     <div class="content-section">
-
-        <legend>Your Orders</legend>
-
         {% if package_list %}
         <div class="table-responsive mt-4 border-bottom table-hover">
             <table class="table">
