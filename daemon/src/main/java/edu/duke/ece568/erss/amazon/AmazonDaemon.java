@@ -18,7 +18,7 @@ import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
  * 4. a full process will contain "purchase(world) ---> pack(world) & pick(UPS) ---> load(world) ---> deliver(UPS)"
  */
 public class AmazonDaemon {
-    // private static final String HOST = "vcm-13663.vm.duke.edu";
+//     private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
     private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
     private static final int WORLD_PORT = 23456;
     // the default timeout for each request
@@ -46,7 +46,7 @@ public class AmazonDaemon {
     private List<AInitWarehouse> warehouses;
 
     public AmazonDaemon() throws IOException {
-        // ups = new MockUPS();
+         ups = new MockUPS();
         this.seqNum = 0;
         // set up the TCP connection to the world(not connected yet)
         Socket socket = new Socket(WORLD_HOST, WORLD_PORT);
@@ -77,7 +77,7 @@ public class AmazonDaemon {
      */
     public void config() throws IOException {
         // TODO: debug info
-        // ups.init();
+         ups.init();
 
         System.out.println("Daemon is running...");
         System.out.println("Listening connection from UPS at 9999");
@@ -286,7 +286,7 @@ public class AmazonDaemon {
         checkPackageID(packageID);
         Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
-            if (true){
+            if (false){
                 AUpick.Builder pick = AUpick.newBuilder();
                 pick.setPackage(p.getPack());
                 pick.setSeqnum(getSeqNum());
@@ -298,6 +298,7 @@ public class AmazonDaemon {
                 command.addPick(pick);
 
                 sendToUPS(command.build());
+                ups.pick(p.getWhID(), packageID);
             }else {
                 // TODO: debug info
                 ups.pick(p.getWhID(), packageID);
@@ -345,6 +346,7 @@ public class AmazonDaemon {
                 command.addDeliver(deliver);
 
                 sendToUPS(command.build());
+                ups.delivery(p.getDestX(), p.getDestY(), packageID);
             }else {
                 // TODO: debug info
                 ups.delivery(p.getDestX(), p.getDestY(), packageID);
@@ -510,7 +512,7 @@ public class AmazonDaemon {
      * This function will send the AUcommand to UPS and receive an ack.
      * @param command AUcommand
      */
-    synchronized void sendToUPS(AUcommand command){
+    void sendToUPS(AUcommand command){
         try {
             System.out.println("amazon sending(to UPS): " + command.toString());
             Socket socket = new Socket(UPS_HOST, UPS_PORT);
@@ -535,12 +537,18 @@ public class AmazonDaemon {
                         System.out.println(err.toString());
                     }
                 }
-                List<Long> acks = r.getAckList();
-                acks.sort(Long::compareTo);
-                if(acks.get(acks.size() - 1) == seqNum - 1){
+
+                if (r.getAckCount() > 0){
                     timer.cancel();
                     break;
                 }
+
+//                List<Long> acks = r.getAckList();
+//                acks.sort(Long::compareTo);
+//                if(acks.get(acks.size() - 1) == seqNum - 1){
+//                    timer.cancel();
+//                    break;
+//                }
                 r.clear();
             }
         }catch (Exception e){

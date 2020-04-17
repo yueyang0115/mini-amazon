@@ -109,7 +109,6 @@ public class MockUPS {
             System.out.println(responses.toString());
         }
 
-
         List<Long> seqs = new ArrayList<>();
         for (UFinished finished : responses.getCompletionsList()){
             seqs.add(finished.getSeqnum());
