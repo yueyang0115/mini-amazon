@@ -52,6 +52,12 @@ class Package(models.Model):
     dest_y = models.IntegerField(default=10)
     creation_time = models.DateTimeField(default=now)
 
+    def total(self):
+        total = 0
+        for order in self.orders.all():
+            total += order.total()
+        return total
+
     def __str__(self):
         return "<" + str(self.warehouse) + ", " + self.status + ">"
 
