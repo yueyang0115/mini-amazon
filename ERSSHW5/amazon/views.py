@@ -29,7 +29,6 @@ def item_detail(request, item_id):
             return redirect(reverse("login"))
         cnt = int(request.POST["count"])
         if request.POST["action"] == "buy":
-            print("user buy thing" + str(cnt))
             # create a new package
             package = Package(owner=request.user)
             package.save()
@@ -40,18 +39,16 @@ def item_detail(request, item_id):
             )
             return redirect(reverse("checkout", kwargs={'package_id': package.id}))
         else:
-            print("user add thing" + str(cnt))
             try:
                 exist_order = Order.objects.get(owner=request.user, item=item, package__isnull=True)
                 exist_order.cnt += cnt
                 exist_order.save()
-                print("existing order")
             except Order.DoesNotExist:
                 # create a new order
                 order = Order(owner=request.user, item=item, cnt=cnt)
                 order.save()
-                print("create new order")
             context["info"] = "Successfully add to cart."
+            context["is_add_cart"] = True
             return render(request, "amazon/success.html", context)
     else:
         context["item"] = item
@@ -72,6 +69,7 @@ def checkout(request, package_id):
         print(package.dest_x + "  " + package.dest_y)
         print("checkout!")
         context["info"] = "Purchase successful."
+        context["is_checkout"] = True
         return render(request, "amazon/success.html", context)
     else:
         context["total"] = package.total()
@@ -84,6 +82,7 @@ def shop_cart(request):
     orders = Order.objects.filter(owner=request.user).filter(package__isnull=True).order_by("creation_time")
     if request.method == 'POST':
         operation = request.POST["operation"]
+        # user delete some order
         if operation == "delete":
             oid = request.POST["order_id"]
             orders.get(pk=oid).delete()
@@ -98,6 +97,7 @@ def shop_cart(request):
                 print(orders.get(pk=o))
             # return redirect(reverse("checkout", kwargs={'package_id': package.id}))
             return redirect(reverse("checkout", kwargs={'package_id': 3}))
+        # api for calculating the total price
         elif operation == "cal_total" and request.is_ajax():
             checked_orders = request.POST.getlist("checked_orders")
             total = 0.0
@@ -179,6 +179,7 @@ def buy(request):
             purchase(package_id=new_package.id)
     return render(request, 'amazon/success.html', {"info": "Order successful!"})
 
+
 @login_required
 def list_package(request):
     package_list = Package.objects.filter(owner=request.user).order_by('creation_time')
@@ -193,6 +194,7 @@ def list_package(request):
         'item_dict':item_dict,
     }
     return render(request, 'amazon/list_package.html', context)
+
 
 @login_required
 def list_package_detail(request, package_id):

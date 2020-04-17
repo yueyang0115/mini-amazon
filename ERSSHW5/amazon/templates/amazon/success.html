@@ -1,7 +1,10 @@
 {% extends "amazon/base.html" %}
 {% block content %}
     <!-- success page, show success info -->
-    {% if info %}
+    {% if is_add_cart %}
+        <h1>{{ info }}</h1>
+        <h2><a href="{% url "shop_cart" %}">My cart</a></h2>
+    {% elif is_checkout %}
         <h1>{{ info }}</h1>
     {% else %}
         <h1>Succeed!</h1>
