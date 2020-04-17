@@ -41,8 +41,8 @@ public class AmazonDaemon {
     // daemon thread used to communicate with front-end
     private DaemonThread daemonThread;
     // a mpa of all unfinished package(key is the package id)
-    private Map<Long, Package> packageMap;
-    private ThreadPoolExecutor threadPool;
+    private final Map<Long, Package> packageMap;
+    private final ThreadPoolExecutor threadPool;
     private List<AInitWarehouse> warehouses;
 
     public AmazonDaemon() throws IOException {
@@ -195,7 +195,7 @@ public class AmazonDaemon {
                 // store this unfinished package to the map
                 packageMap.put(packageID, p);
                 // pick(to UPS) and pack(to world) can happen in parallel
-                // i.e. use two different thread to send out the command
+                // i.e. use two different threads to send out the command
                 toPack(packageID);
                 toPick(packageID);
             });
@@ -212,7 +212,7 @@ public class AmazonDaemon {
             if (socket != null){
                 threadPool.execute(() -> {
                     try {
-                        recvFromUPS(socket.getInputStream(), socket.getOutputStream());
+                        handleUPSRequest(socket.getInputStream(), socket.getOutputStream());
                     } catch (IOException e) {
                         System.err.println("runUPSServer: " + e.toString());
                     }
@@ -330,7 +330,7 @@ public class AmazonDaemon {
     void toDelivery(long packageID){
         checkPackageID(packageID);
         Package p = packageMap.get(packageID);
-	System.out.println("delivering: " + packageID);
+	    System.out.println("delivering: " + packageID);
         p.setStatus(Package.DELIVERING);
         threadPool.execute(() -> {
             if (true){
@@ -367,7 +367,7 @@ public class AmazonDaemon {
         System.out.println(String.format("package %d: %s", packageID, responses.toString()));
 
         if (responses.getReadyCount() == 0){
-	    System.out.println("pack: wait actual data");
+	        System.out.println(String.format("package %d: %s", packageID, "wait actual \"pack\" data"));
             // only receive ack, need another receive to receive ready list
             responses = receive();
             System.out.println(String.format("package %d: %s", packageID, responses.toString()));
@@ -398,7 +398,7 @@ public class AmazonDaemon {
         System.out.println(String.format("package %d: %s", packageID, responses.toString()));
 
         if (responses.getLoadedCount() == 0){
-	    System.out.println("load: wait actual data");
+	        System.out.println(String.format("package %d: %s", packageID, "wait actual \"load\" data"));
             responses = receive();
             System.out.println(String.format("package %d: %s", packageID, responses.toString()));
         }
@@ -463,7 +463,7 @@ public class AmazonDaemon {
         for (long seq : seqs){
             res.addAck(seq);
         }
-	System.out.println("send ack back(to UPS): " + res.toString());
+	    System.out.println("send ack back(to UPS): " + res.toString());
         sendMsgTo(res.build(), outputStream);
     }
 
@@ -501,6 +501,7 @@ public class AmazonDaemon {
         for (long seq : seqs){
             commands.addAcks(seq);
         }
+        System.out.println("send ack back(to World): " + commands.toString());
         synchronized (out){
             sendMsgTo(commands.build(), out);
         }
@@ -554,12 +555,11 @@ public class AmazonDaemon {
         }
     }
 
-    void recvFromUPS(InputStream inputStream, OutputStream outputStream){
+    void handleUPSRequest(InputStream inputStream, OutputStream outputStream){
         try {
             UAcommand.Builder command = UAcommand.newBuilder();
             recvMsgFrom(command, inputStream);
-            System.out.println("receive from ups:");
-            System.out.println(command);
+            System.out.println("receive from ups:" + command);
             // send back ack, once receive
             sendAck(command.build(), outputStream);
             // check all trucks which arrive
@@ -615,10 +615,9 @@ public class AmazonDaemon {
                 }
             }
             // TODO: maybe we should consider what if several ack arrive?
-	    // &&
-            //        responses.getAcks(responses.getAcksCount() - 1) == seqNum - 1
+            // && responses.getAcks(responses.getAcksCount() - 1) == seqNum - 1
             if (responses.getAcksCount() > 0){
-		System.out.println("recv(from world): " + responses);
+                System.out.println("recv ack from world");
                 // only after received the ack, we will stop the timer
                 timer.cancel();
                 break;
@@ -632,9 +631,11 @@ public class AmazonDaemon {
     /**
      * This function is a wrapper of actual receive function, it will send back the ack automatically.
      */
-    synchronized AResponses.Builder receive(){
+    AResponses.Builder receive(){
         AResponses.Builder responses = AResponses.newBuilder();
-        recvMsgFrom(responses, in);
+        synchronized (in){
+            recvMsgFrom(responses, in);
+        }
         // send ack back
         sendAck(responses.build());
         return responses;
