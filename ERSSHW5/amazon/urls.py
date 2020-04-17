@@ -15,6 +15,8 @@ urlpatterns = [
     path('checkout/<int:package_id>', views.checkout, name="checkout"),
     # shop_cart page
     path('shopcart', views.shop_cart, name="shop_cart"),
+    # api for change cnt in shopping cart
+    path('change_cnt', views.change_cnt, name="change_cnt"),
 
     # list_package page
     path('listpackage/', views.list_package, name='list-package'),

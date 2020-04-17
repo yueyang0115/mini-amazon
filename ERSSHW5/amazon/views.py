@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 
 from .models import *
 
@@ -80,7 +81,7 @@ def checkout(request, package_id):
 
 @login_required
 def shop_cart(request):
-    orders = Order.objects.filter(owner=request.user).filter(package__isnull=True)
+    orders = Order.objects.filter(owner=request.user).filter(package__isnull=True).order_by("creation_time")
     if request.method == 'POST':
         operation = request.POST["operation"]
         if operation == "delete":
@@ -104,8 +105,38 @@ def shop_cart(request):
     return render(request, "amazon/shopping_cart.html", context)
 
 
+# ajax api for changing item count in the shopping cart
+@login_required
+def change_cnt(request):
+    if request.is_ajax() and request.method == "POST":
+        order_id = request.POST["order_id"]
+        operation = request.POST["operation"]
+        total_cart = float(request.POST["total_cart"])
+        order = Order.objects.get(pk=order_id)
+        # lower and upper limit --- 1 ~ 99
+        if operation == "add" and order.cnt < 99:
+            order.cnt += 1
+            order.save()
+            total_cart += order.item.price
+        elif operation == "minus" and order.cnt > 1:
+            order.cnt -= 1
+            order.save()
+            total_cart -= order.item.price
+        data = {
+            # latest count
+            "cnt": order.cnt,
+            # total price for the order
+            "total_order": ("%.2f" % order.total()),
+            # total price for all
+            "total_cart": ("%.2f" % total_cart)
+        }
+        return JsonResponse(data)
+    return JsonResponse({})
+
+
 def new_order(request):
     return render(request, 'amazon/new_order.html')
+
 
 @login_required
 def buy(request):

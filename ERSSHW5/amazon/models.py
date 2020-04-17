@@ -71,6 +71,7 @@ class Order(models.Model):
     cnt = models.IntegerField(default=1)
     # package id
     package = models.ForeignKey(Package, on_delete=models.CASCADE, related_name="orders", null=True, blank=True)
+    creation_time = models.DateTimeField(default=now)
 
     # return the total price for current order
     def total(self):

@@ -10,7 +10,10 @@
                 <table class="table">
                     <thead>
                     <tr class="row text-center">
-                        <th class="col-1">#</th>
+                        <th class="col-1">
+                            <input class="form-check-input" type="checkbox" id="check_all">
+                            <label class="form-check-label" for="check_all">#</label>
+                        </th>
                         <!-- thumbnail + description -->
                         <th class="col-3 text-left">Item</th>
                         <th class="col-2">Qty</th>
@@ -24,16 +27,27 @@
                     {% for order in orders %}
                         <tr class="row text-center border-bottom">
                             <td class="col-1 align-self-center border-top-0">
-                                <input class="form-check-input" type="checkbox" value="{{ order.id }}" name="checked_orders">
+                                <input class="form-check-input" type="checkbox" value="{{ order.id }}"
+                                       name="checked_orders">
                                 <label class="form-check-label" for="check"> {{ forloop.counter }}</label>
                             </td>
                             <td class="col-3 text-left border-top-0">
                                 <img class="img-thumbnail" style="width: 50px; height: 50px" src="{{ order.item.img }}">
                                 {{ order.item.description }}
                             </td>
-                            <td class="col-2 align-self-center border-top-0">{{ order.cnt }}</td>
-                            <td class="col-2 align-self-center border-top-0">&dollar; {{ order.item.price|floatformat:2 }}</td>
-                            <td class="col-2 align-self-center border-top-0">&dollar; {{ order.total|floatformat:2 }}</td>
+                            <td class="col-2 align-self-center border-top-0">
+                                <button type="button" class="btn" onclick="change_cnt({{ order.id }}, false)"><i
+                                        class="fa fa-minus-square-o"></i></button>
+                                <span id="cnt{{ order.id }}">{{ order.cnt }}</span>
+                                <button type="button" class="btn" onclick="change_cnt({{ order.id }}, true)"><i
+                                        class="fa fa-plus-square-o"></i></button>
+                            </td>
+                            <td class="col-2 align-self-center border-top-0">
+                                &dollar; {{ order.item.price|floatformat:2 }}</td>
+                            <td class="col-2 align-self-center border-top-0">
+                                &dollar;
+                                <span id="total_order{{ order.id }}">{{ order.total|floatformat:2 }}</span>
+                            </td>
                             <td class="col-2 align-self-center border-top-0">
                                 <button onclick="delete_order({{ order.id }})" class="btn btn-outline-secondary">
                                     Delete
@@ -47,7 +61,9 @@
             <!-- total price -->
             <div class="row">
                 <div class="col-5 offset-7 text-right mt-4 mb-4">
-                    <b>Total(all items): </b><span style="color: red">&dollar; {{ total|floatformat:2 }}</span>
+                    <b>Total(all items): </b>
+                    <span style="color: red">&dollar;</span>
+                    <span id="total_cart" style="color: red">{{ total|floatformat:2 }}</span>
                 </div>
             </div>
             <div class="text-right">
@@ -84,6 +100,38 @@
             operation_field.name = "operation"
             operation_field.value = type
             element.appendChild(operation_field)
+        }
+
+        function change_cnt(id, isAdd) {
+            let opera;
+            if (isAdd) {
+                opera = "add";
+            } else {
+                opera = "minus";
+            }
+            const total = $("#total_cart").text();
+            // use ajax to communicate with backend, change the count of specific order
+            const config = {
+                "url": "{% url "change_cnt" %}",
+                "async": true,
+                "type": "post",
+                "dataType": "json",
+                "data": {
+                    "order_id": id,
+                    "operation": opera,
+                    "total_cart": total,
+                    "csrfmiddlewaretoken": "{{ csrf_token }}"
+                },
+                "success": function (result) {
+                    $("#total_order" + id).html(result["total_order"]);
+                    $("#cnt" + id).html(result["cnt"]);
+                    $("#total_cart").text(result["total_cart"]);
+                },
+                "error": function (xhr, status, error) {
+
+                }
+            };
+            $.ajax(config);
         }
     </script>
 {% endblock script %}
