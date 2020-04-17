@@ -32,8 +32,8 @@
                                 {{ order.item.description }}
                             </td>
                             <td class="col-2 align-self-center border-top-0">{{ order.cnt }}</td>
-                            <td class="col-2 align-self-center border-top-0">&dollar; {{ order.item.price }}</td>
-                            <td class="col-2 align-self-center border-top-0">&dollar; {{ order.total }}</td>
+                            <td class="col-2 align-self-center border-top-0">&dollar; {{ order.item.price|floatformat:2 }}</td>
+                            <td class="col-2 align-self-center border-top-0">&dollar; {{ order.total|floatformat:2 }}</td>
                             <td class="col-2 align-self-center border-top-0">
                                 <button onclick="delete_order({{ order.id }})" class="btn btn-outline-secondary">
                                     Delete
@@ -47,7 +47,7 @@
             <!-- total price -->
             <div class="row">
                 <div class="col-5 offset-7 text-right mt-4 mb-4">
-                    <b>Total(all items): </b><span style="color: red">&dollar; {{ total }}</span>
+                    <b>Total(all items): </b><span style="color: red">&dollar; {{ total|floatformat:2 }}</span>
                 </div>
             </div>
             <div class="text-right">

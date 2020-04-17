@@ -27,7 +27,7 @@
                             <div class="thumbnail">
                                 <div class="caption">
                                       <h4>{{ item.description }}</h4>
-                                      <h5>$ {{ item.price }}</h5>   
+                                      <h5>$ {{ item.price|floatformat:2 }}</h5>   
                                 </div>
                             </div>
                         </a>

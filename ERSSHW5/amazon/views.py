@@ -11,7 +11,7 @@ from .utils import purchase
 # Home page, used to show a list of items.
 def home(request):
     context = {}
-    items = Item.objects.all()
+    items = Item.objects.all().order_by("id")
     if request.method == "POST":
         search = request.POST["search"]
         items = items.filter(description__icontains=search)
