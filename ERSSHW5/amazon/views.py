@@ -146,32 +146,21 @@ def buy(request):
 def list_package(request):
     package_list = Package.objects.filter(owner=request.user).order_by('creation_time')
     item_dict = {}
-    price_dict = {}
 
     for pack in package_list:
         orders = Order.objects.filter(package__id=pack.id)
         item_dict[pack.id] = orders
-        total = 0
-        for o in orders:
-            total += o.total()
-        price_dict[pack.id] = total
 
     context = {
         'package_list': package_list,
         'item_dict':item_dict,
-        'price_dict':price_dict
     }
     return render(request, 'amazon/list_package.html', context)
 
 @login_required
 def list_package_detail(request, package_id):
-    orders = Order.objects.filter(package__id = package_id)
-    total = 0
-    for o in orders:
-        total += o.total()
     context = {
-        'product_list': orders,
+        'product_list': Order.objects.filter(package__id = package_id),
         'pack': Package.objects.get(owner=request.user, id=package_id),
-        'total':total
     }
     return render(request, 'amazon/list_package_detail.html', context)
