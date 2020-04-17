@@ -1,37 +1,54 @@
 {% extends "amazon/base.html" %}
 {% block content %}
     <div class="content-section">
+        <div>
+            <br>
+            <a class="mr-2" >{{pack.owner.username}} </a>
+            <a class="mr-2" >Created On:</a>
+            <a class="mr-2" >{{pack.creation_time}} </a>
+            <a class="mr-2" >Ship to:</a>
+            <a class="mr-2" >({{pack.dest_x}}, {{pack.dest_y}}) </a>
+            <a class="mr-2" >Total Price:</a>
+            <a class="mr-2" >{{total}}</a>
+        </div>
+
         <div class="table-responsive mt-4 border-bottom table-hover">
         {% if product_list %}
-            <br>
             <table class="table">
                 <thead>
-                    <tr class="row">
-                        <th class="col-4 text-center">Description</th>
-                        <th class="col-2 text-center">Count</th>
-                        <th class="col-2 text-center">Price</th>
-                        <th class="col-2 text-center">Total</th>>
+                    <tr class="row text-center">
+                        <th class="col-4">Description</th>
+                        <th class="col-2">Count</th>
+                        <th class="col-2">Price</th>
+                        <th class="col-2">Total</th>
                     </tr>
                 </thead>
 
                 <tbody>
                 {% for prod in product_list %}
-                    <tr class="row">
+                    <tr class="row ">
                         <td class="col-4 text-left">
                                 <img class="img-thumbnail" style="width: 50px; height: 50px" src="{{ prod.item.img }}">
                                 {{ prod.item.description }}
-                        </td>>
-                        <td class="col-2 text-center">{{prod.item}}</td>
+                        </td>
                         <td class="col-2 text-center">{{prod.cnt}}</td>
-                        <td class="col-2 text-center">{{prod.item.price }}</td>
+                        <td class="col-2 text-center">&dollar; {{prod.item.price }}</td>
+                        <td class="col-2 text-center">&dollar; {{prod.total}}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
             </table>
         {% endif %}
+
+            <br>
+        </div>
+        <div class="row">
+                <div class="col-3 offset-9 text-right mt-4 mb-4">
+                    <b>Total(all items): </b><span style="color: red">&dollar;{{total}}</span>
+                </div>
         </div>
 
-        <br>
+
         <a href = "/listpackage" class = "btn btn-outline-info" >Back</a>
     </div>
 

@@ -129,7 +129,13 @@ def list_package(request):
 
 @login_required
 def list_package_detail(request, package_id):
+    orders = Order.objects.filter(package__id = package_id)
+    total = 0
+    for o in orders:
+        total += o.total()
     context = {
-        'product_list': Order.objects.filter(package__id = package_id)
+        'product_list': orders,
+        'pack': Package.objects.get(owner=request.user, id=package_id),
+        'total':total
     }
     return render(request, 'amazon/list_package_detail.html', context)
