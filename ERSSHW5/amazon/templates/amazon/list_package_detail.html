@@ -1,0 +1,47 @@
+{% extends "amazon/base.html" %}
+{% block content %}
+    <h3>&nbsp;&nbsp;Order Details</h3>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;Ordered on &nbsp;{{pack.creation_time|date:"F d, Y" }} &nbsp;|&nbsp; Shipping to &nbsp;({{pack.dest_x}}, {{pack.dest_y}})</p>
+
+    <div class="content-section">
+        <div class="table-responsive mt-4 border-bottom table-hover">
+        {% if product_list %}
+            <table class="table">
+                <thead>
+                    <tr class="row text-center">
+                        <th class="col-1">#</th>
+                        <th class="col-4">Item</th>
+                        <th class="col-2">Count</th>
+                        <th class="col-2">Price</th>
+                        <th class="col-2">Total</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for prod in product_list %}
+                    <tr class="row">
+                        <td class="col-1 text-center">{{ forloop.counter }}</td>
+                        <td class="col-3 text-center"><img class="img-thumbnail" style="width: 120px; height: 120px" src="{{ prod.item.img }}"></td>
+                        <td class="col-1 text-left">{{ prod.item.description }}</td>
+                        <td class="col-2 text-center">{{prod.cnt}}</td>
+                        <td class="col-2 text-center">&dollar; {{prod.item.price }}</td>
+                        <td class="col-2 text-center">&dollar; {{prod.total}}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+            <br>
+        </div>
+        <div class="row">
+                <div class="col-3 offset-8 text-right mt-4 mb-4">
+                    <b>Total(all items): </b><span style="color: #080000">&dollar;{{pack.total}}</span>
+                </div>
+        </div>
+
+
+        <a href = "/listpackage" class = "btn btn-outline-info" >Back</a>
+    </div>
+
+{% endblock content %}

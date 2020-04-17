@@ -1,0 +1,51 @@
+{% extends "amazon/base.html" %}
+{% block content %}
+    <h3>&nbsp;&nbsp;Your Orders</h3>
+    <br>
+    <div class="content-section">
+        {% if package_list %}
+        <div class="table-responsive mt-4 border-bottom table-hover">
+            <table class="table">
+                <thead>
+                    <tr class="row text-center">
+                        <!-- thumbnail -->
+                        <th class="col-1">#</th>
+                        <th class="col-1">Status</th>
+                        <th class="col-2">Creation_time</th>
+                        <th class="col-1">Price</th>
+                        <th class="col-5">Items</th>
+                        <th class="col-2">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pack in package_list %}
+                        <tr class="row">
+                            <td class="col-1 text-center">{{pack.id}}</td>
+                            <td class="col-1 text-center">{{pack.status}}</td>
+                            <td class="col-2 text-center">{{pack.creation_time|date:"F d, Y" }}</td>
+                            <td class="col-1 text-center"> &dollar;{{pack.total}}
+                            </td>
+                            <td class="col-5 text-center">
+                                {% for key, value in item_dict.items %}
+                                    {% if key is pack.id %}
+                                        {% for order in value %}
+                                            {% if forloop.counter < 4 %}
+                                                <img class="img-thumbnail" style="width: 50px; height: 50px" src="{{ order.item.img }}">
+                                                {{ order.item.description }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td class="col-2 text-center">
+                                <a href="/listpackage/{{ pack.id }}/"> View Items</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+{% endblock content %}
