@@ -7,7 +7,7 @@ def migrate_callback(sender, **kwargs):
     print("after migrate")
     from amazon.models import Item
     if Item.objects.all().count() == 0:
-        # we should insert some new data here
+        # TODO: we should insert some new data here
         print("insert new data")
     else:
         print("already has data")

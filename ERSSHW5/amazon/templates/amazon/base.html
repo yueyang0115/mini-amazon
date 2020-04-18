@@ -30,22 +30,62 @@
                     aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            <!-- use mr-auto to push all other elements to the right side -->
             <div class="collapse navbar-collapse" id="navbarToggle">
-                <div class="navbar-nav mr-auto">
-                    <a class="nav-item nav-link" href="{% url 'home' %}">Home</a>
-                </div>
-                <!-- Navbar Right Side -->
-                <div class="navbar-nav">
-                    {% if user.is_authenticated %}
-                        <a class="nav-item nav-link" href="{% url 'shop_cart' %}"><i class="fa fa-shopping-cart"></i></a>
-                        <a class="nav-item nav-link" href="{% url 'list-package' %}">Orders</a>
-                        <a class="nav-item nav-link" href="{% url 'profile' %}">Account</a>
-                        <a class="nav-item nav-link" href="{% url 'logout' %}">Logout</a>
-                    {% else %}
-                        <a class="nav-item nav-link" href="{% url 'login' %}">Login</a>
-                        <a class="nav-item nav-link" href="{% url 'register' %}">Register</a>
+                <!-- use mr-auto to push all other elements to the right side -->
+                <ul class="navbar-nav mr-auto">
+                    <li>
+                        <a class="nav-item nav-link" href="{% url 'home' %}">Home</a>
+                    </li>
+                    {% if categories and category %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ category|capfirst }}
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="{% url "home" %}">All</a>
+                                <div class="dropdown-divider"></div>
+                                {% for c in categories %}
+                                    <a class="dropdown-item"
+                                       href="{% url "home_category" c.category %}">{{ c.category|capfirst }}</a>
+                                {% endfor %}
+                            </div>
+                        </li>
                     {% endif %}
-                </div>
+                <li>
+                    <a class="nav-item nav-link" href="{% url 'add_item' %}">
+                                <i class="fa fa-plus"></i>
+                    </a>
+                </li>
+                </ul>
+
+                <!-- Navbar Right Side -->
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-item nav-link" href="{% url 'shop_cart' %}">
+                                <i class="fa fa-shopping-cart"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-item nav-link" href="{% url 'list-package' %}">Orders</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-item nav-link" href="{% url 'profile' %}">Account</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-item nav-link" href="{% url 'logout' %}">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-item nav-link" href="{% url 'login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-item nav-link" href="{% url 'register' %}">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
             </div>
         </div>
     </nav>
