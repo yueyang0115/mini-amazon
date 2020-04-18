@@ -17,9 +17,12 @@ def home(request):
         search = request.POST["search"]
         items = items.filter(description__icontains=search)
     context["items"] = items
+    context["categories"] = Category.objects.all()
+    context["category"] = "All"
     return render(request, "amazon/home.html", context)
 
 
+# Home page, but with specific category
 def home_category(request, category):
     context = {}
     category = Category.objects.get(category=category)
@@ -28,6 +31,8 @@ def home_category(request, category):
         search = request.POST["search"]
         items = items.filter(description__icontains=search)
     context["items"] = items
+    context["categories"] = Category.objects.all()
+    context["category"] = category
     return render(request, "amazon/home.html", context)
 
 
@@ -173,7 +178,12 @@ def list_package(request):
 @login_required
 def list_package_detail(request, package_id):
     context = {
-        'product_list': Order.objects.filter(package__id = package_id),
+        'product_list': Order.objects.filter(package__id=package_id),
         'pack': Package.objects.get(owner=request.user, id=package_id),
     }
     return render(request, 'amazon/list_package_detail.html', context)
+
+
+@login_required
+def add_item(request):
+    return render(request, "amazon/add_item.html")
