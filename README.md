@@ -2,9 +2,32 @@
 
 Fancy Amazon!
 
+## Feature checklist(requirement)
+
+- [x] Buy products(communicate with both the world and UPS).
+- [x] Different catalog of products.
+- [x] Check the status of an order.
+- [x] Specify the deliver address(i.e. (x,y)).
+- [x] Specify a UPS account name to associate the order with.
+- [x] Provide the *tracking number* for the shipment.
+
 ## Extra features we have
 
-* A fully functional shopping cart(implement by jQuery + Ajax)
-  * check(& uncheck) any orders you want --- the total price will change dynamically
-  * change the item count of each order dynamically
-  * delete any order you don't need anymore
+- [x] A full-featured **shopping cart**(implemented by jQuery + Ajax).
+    - check(& uncheck) any orders you want
+    - can change the item count of each order dynamically
+    - delete any order you don't need anymore
+    - the price will change according to your action(e.g. delete order, change count)
+- [ ] Product management + seller.
+    - any user can register as a seller
+    - any sellers have a product management system which he/she can 
+        - publish new products
+        - edit their selling products
+        - delete their selling products
+- [x] Search bar in home page.
+    - search products from all category
+    - search products in one specic category
+- [ ] Search bar in order page, locate any order quickly.
+- [ ] Delete any history order.
+- [ ] Product category.
+- [x] User-friendly UI and interaction.
