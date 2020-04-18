@@ -13,7 +13,7 @@ Fancy Amazon!
 
 ## Extra features we have
 
-- [x] A full-featured **shopping cart**(implemented by jQuery + Ajax).
+- [x] A **full-featured shopping cart**(implemented by jQuery + Ajax).
     - check(& uncheck) any orders you want
     - can change the item count of each order dynamically
     - delete any order you don't need anymore
@@ -27,7 +27,13 @@ Fancy Amazon!
 - [x] Search bar in home page.
     - search products from all category
     - search products in one specic category
-- [ ] Search bar in order page, locate any order quickly.
-- [ ] Delete any history order.
+- [ ] A **full-featured order page**.
+    - search bar --- locate any order quickly
+    - delete any history order
 - [ ] Product category.
+    - several category of products, can switch between them in the home page
+- [ ] Associate your amazon account with UPS account.
+    - automatically associate each order with your UPS account
+- [ ] Address book.
+    - Store your frequently use addre into address book and fill out the address autimatically when checkout.
 - [x] User-friendly UI and interaction.
