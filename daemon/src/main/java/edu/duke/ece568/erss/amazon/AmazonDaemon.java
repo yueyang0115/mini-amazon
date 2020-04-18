@@ -17,9 +17,10 @@ import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
  * 3. all communication with the UPS will be unblocking, e.g. toPick() will return once send successfully(receive ack)
  * 4. a full process will contain "purchase(world) ---> pack(world) & pick(UPS) ---> load(world) ---> deliver(UPS)"
  */
+// TODO: consider parse response in a separate function(sometimes a response of one package will contains information of the other)
 public class AmazonDaemon {
-//     private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
-    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+     private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
+//    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
     private static final int WORLD_PORT = 23456;
     // the default timeout for each request
     // i.e. resend request if don't receive ack within TIME_OUT
@@ -46,7 +47,7 @@ public class AmazonDaemon {
     private List<AInitWarehouse> warehouses;
 
     public AmazonDaemon() throws IOException {
-        //ups = new MockUPS();
+        ups = new MockUPS();
         this.seqNum = 0;
         // set up the TCP connection to the world(not connected yet)
         Socket socket = new Socket(WORLD_HOST, WORLD_PORT);
@@ -77,7 +78,7 @@ public class AmazonDaemon {
      */
     public void config() throws IOException {
         // TODO: debug info
-        //ups.init();
+        ups.init();
 
         System.out.println("Daemon is running...");
         System.out.println("Listening connection from UPS at 9999");
@@ -131,22 +132,19 @@ public class AmazonDaemon {
         new Thread(() -> {
             try {
                 Thread.sleep(3000);
-                System.out.println("try to connect to daemon server");
-                Socket socket = new Socket("localhost", 8888);
-                PrintWriter out = new PrintWriter(socket.getOutputStream());
-                out.write("3\n");
-                out.flush();
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                System.out.println("receive confirm from amazon: " + in.readLine());
-                socket.close();
-
-                Thread.sleep(3000);
-                Socket socket1 = new Socket("localhost", 8888);
-                PrintWriter out1 = new PrintWriter(socket1.getOutputStream());
-                out1.write("2\n");
-                out1.flush();
-                BufferedReader in1 = new BufferedReader(new InputStreamReader(socket1.getInputStream()));
-                System.out.println("receive confirm from amazon: " + in1.readLine());
+                // WARNING!!! only two package while debugging(mock UPS only have two trucks)
+                List<String> packages = new ArrayList<>(Arrays.asList("36\n", "37\n"));
+                for (String p : packages){
+                    System.out.println("try to connect to daemon server");
+                    Socket socket = new Socket("localhost", 8888);
+                    PrintWriter out = new PrintWriter(socket.getOutputStream());
+                    out.write(p);
+                    out.flush();
+                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    System.out.println("receive confirm from amazon: " + in.readLine());
+                    socket.close();
+                    Thread.sleep(1000);
+                }
             }catch (Exception e){
                 System.err.println(e.toString());
             }
@@ -168,10 +166,11 @@ public class AmazonDaemon {
             threadPool.execute(() -> {
                 System.out.println(String.format("Receive new buying request, id: %d", packageID));
                 // 1. retrieve the package info from DB
+                long seq = getSeqNum();
                 APurchaseMore.Builder newPackage = new SQL().queryPackage(packageID);
-                newPackage.setSeqnum(getSeqNum());
+                newPackage.setSeqnum(seq);
                 // 2. tell the world to purchase more
-                AResponses.Builder res = send(ACommands.newBuilder().addBuy(newPackage));
+                AResponses.Builder res = send(ACommands.newBuilder().addBuy(newPackage), seq);
                 // 3. receive the purchase result
                 while (true){
                     // sometimes, the successful data will come back with the ack, so we check first
@@ -265,14 +264,14 @@ public class AmazonDaemon {
      */
     void toPack(long packageID){
         checkPackageID(packageID);
-        Package p = packageMap.get(packageID);
+//        Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
             System.out.println("packing: " + packageID);
-            pack(p.getId());
+            pack(packageID);
             System.out.println("packed: " + packageID);
             // once finish packing, check whether the truck has already arrived
             // if yes, go loading; if no, do nothing and return
-            if (p.getTruckID() != -1){
+            if (packageMap.get(packageID).getTruckID() != -1){
                 toLoad(packageID);
             }
         });
@@ -286,7 +285,7 @@ public class AmazonDaemon {
         checkPackageID(packageID);
         Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
-            if (true){
+            if (false){
                 AUpick.Builder pick = AUpick.newBuilder();
                 pick.setPackage(p.getPack());
                 pick.setSeqnum(getSeqNum());
@@ -333,7 +332,7 @@ public class AmazonDaemon {
 	    System.out.println("delivering: " + packageID);
         p.setStatus(Package.DELIVERING);
         threadPool.execute(() -> {
-            if (true){
+            if (false){
                 AUdeliver.Builder deliver = AUdeliver.newBuilder();
                 deliver.setPackage(p.getPack());
                 deliver.setSeqnum(getSeqNum());
@@ -360,10 +359,11 @@ public class AmazonDaemon {
 
         ACommands.Builder command = ACommands.newBuilder();
 
+        long seq = getSeqNum();
         APack pack = p.getPack();
-        command.addTopack(pack.toBuilder().setSeqnum(getSeqNum()));
+        command.addTopack(pack.toBuilder().setSeqnum(seq));
 
-        AResponses.Builder responses = send(command);
+        AResponses.Builder responses = send(command, seq);
         System.out.println(String.format("package %d: %s", packageID, responses.toString()));
 
         if (responses.getReadyCount() == 0){
@@ -387,14 +387,15 @@ public class AmazonDaemon {
 
         ACommands.Builder command = ACommands.newBuilder();
 
+        long seq = getSeqNum();
         APutOnTruck.Builder load = APutOnTruck.newBuilder();
         load.setWhnum(p.getWhID());
         load.setTruckid(p.getTruckID());
         load.setShipid(packageID);
-        load.setSeqnum(getSeqNum());
+        load.setSeqnum(seq);
         command.addLoad(load);
 
-        AResponses.Builder responses = send(command);
+        AResponses.Builder responses = send(command, seq);
         System.out.println(String.format("package %d: %s", packageID, responses.toString()));
 
         if (responses.getLoadedCount() == 0){
@@ -412,12 +413,13 @@ public class AmazonDaemon {
     public void query(int packageID){
         ACommands.Builder command = ACommands.newBuilder();
 
+        long seq = getSeqNum();
         AQuery.Builder query = AQuery.newBuilder();
         query.setPackageid(packageID);
-        query.setSeqnum(getSeqNum());
+        query.setSeqnum(seq);
         command.addQueries(query);
 
-        AResponses.Builder responses = send(command);
+        AResponses.Builder responses = send(command, seq);
         System.out.println(String.format("package %d: %s", packageID, responses.toString()));
 
         if (responses.getPackagestatusCount() == 0){
@@ -433,7 +435,7 @@ public class AmazonDaemon {
         ACommands.Builder command = ACommands.newBuilder();
         command.setDisconnect(true);
 
-        AResponses.Builder res = send(command);
+        AResponses.Builder res = send(command, 0);
         System.out.println(res.toString());
 
         if (res.hasFinished()){
@@ -497,13 +499,15 @@ public class AmazonDaemon {
         for (APackage a : responses.getPackagestatusList()){
             seqs.add(a.getSeqnum());
         }
-        ACommands.Builder commands = ACommands.newBuilder();
-        for (long seq : seqs){
-            commands.addAcks(seq);
-        }
-        System.out.println("send ack back(to World): " + commands.toString());
-        synchronized (out){
-            sendMsgTo(commands.build(), out);
+        if (seqs.size() > 0){
+            ACommands.Builder commands = ACommands.newBuilder();
+            for (long seq : seqs){
+                commands.addAcks(seq);
+            }
+            System.out.println("send ack back(to World): " + commands.toString());
+            synchronized (out){
+                sendMsgTo(commands.build(), out);
+            }
         }
     }
 
@@ -592,11 +596,12 @@ public class AmazonDaemon {
      *   repeated int64 acks =7;
      * }
      * @param commands ACommand
+     * @param seqNum the sequence number of this command(used to check ack)
      * @return AResponse object, in case the response contains something other than ack
      */
-    synchronized AResponses.Builder send(ACommands.Builder commands){
+    synchronized AResponses.Builder send(ACommands.Builder commands, long seqNum){
         // TODO: debug info
-        commands.setSimspeed(500);
+        commands.setSimspeed(1000);
         System.out.println("amazon sending(to world): " + commands.toString());
         // if not receive the ack within 10s, it will resend the message
         Timer timer = new Timer();
@@ -615,9 +620,9 @@ public class AmazonDaemon {
                 }
             }
             // TODO: maybe we should consider what if several ack arrive?
-            // && responses.getAcks(responses.getAcksCount() - 1) == seqNum - 1
-            if (responses.getAcksCount() > 0){
+            if (responses.getAcksCount() > 0 && responses.getAcksList().contains(seqNum)){
                 System.out.println("recv ack from world");
+                System.out.println(responses.toString());
                 // only after received the ack, we will stop the timer
                 timer.cancel();
                 break;

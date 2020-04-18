@@ -20,6 +20,17 @@ def home(request):
     return render(request, "amazon/home.html", context)
 
 
+def home_category(request, category):
+    context = {}
+    category = Category.objects.get(category=category)
+    items = Item.objects.all().order_by("id").filter(category=category)
+    if request.method == "POST":
+        search = request.POST["search"]
+        items = items.filter(description__icontains=search)
+    context["items"] = items
+    return render(request, "amazon/home.html", context)
+
+
 # Item detail page, used to show the detail info of one specific item.
 def item_detail(request, item_id):
     item = Item.objects.get(pk=item_id)

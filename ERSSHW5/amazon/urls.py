@@ -5,6 +5,8 @@ from . import views
 urlpatterns = [
     # home page(list items)
     path('', views.home, name="home"),
+    # category of home page
+    path('<category>', views.home_category, name="home_category"),
 
     # item detail page
     path('item/<int:item_id>', views.item_detail, name="item_detail"),
