@@ -40,6 +40,7 @@ def item_detail(request, item_id):
             return redirect(reverse("checkout", kwargs={'package_id': package.id}))
         else:
             try:
+                # try to get an existing order
                 exist_order = Order.objects.get(owner=request.user, item=item, package__isnull=True)
                 exist_order.cnt += cnt
                 exist_order.save()
@@ -70,6 +71,7 @@ def checkout(request, package_id):
         print("checkout!")
         context["info"] = "Purchase successful."
         context["is_checkout"] = True
+        # TODO: send the buy request to daemon
         return render(request, "amazon/success.html", context)
     else:
         context["total"] = package.total()
@@ -90,13 +92,14 @@ def shop_cart(request):
             # get all checked orders
             checked_orders = request.POST.getlist("checked_orders")
             print(checked_orders)
-            # TODO: create a new package, purchase and return to successful page
-            # pack = Package(owner=request.user, warehouse=1)
-            for o in checked_orders:
-                # pack.orders.add(orders.get(pk=o))
-                print(orders.get(pk=o))
-            # return redirect(reverse("checkout", kwargs={'package_id': package.id}))
-            return redirect(reverse("checkout", kwargs={'package_id': 3}))
+            # will only create a new package when at least one order is chosen
+            if len(checked_orders) > 0:
+                pack = Package(owner=request.user, warehouse=1)
+                pack.save()
+                for o in checked_orders:
+                    print(orders.get(pk=int(o)))
+                    pack.orders.add(orders.get(pk=int(o)))
+                return redirect(reverse("checkout", kwargs={'package_id': pack.id}))
         # api for calculating the total price
         elif operation == "cal_total" and request.is_ajax():
             checked_orders = request.POST.getlist("checked_orders")
@@ -138,46 +141,6 @@ def change_cnt(request):
         }
         return JsonResponse(data)
     return JsonResponse({})
-
-
-def new_order(request):
-    return render(request, 'amazon/new_order.html')
-
-
-@login_required
-def buy(request):
-    if request.method == 'POST':
-        apple_cnt = request.POST['apple_cnt']
-        orange_cnt = request.POST['orange_cnt']
-        dest_x = request.POST['x']
-        dest_y = request.POST['y']
-
-        if apple_cnt != 0 or orange_cnt != 0:
-            # create a new package
-            new_package = Package(owner=request.user, dest_x=dest_x, dest_y=dest_y)
-            new_package.save()
-
-            if apple_cnt != 0:
-                # NOTE: this may throw and NotExist exception
-                apple = Item.objects.get(description="apple")
-                # create will call save automatically
-                new_package.orders.create(
-                    owner=request.user,
-                    item=apple,
-                    cnt=apple_cnt
-                )
-
-            if orange_cnt != 0:
-                orange = Item.objects.get(description="orange")
-                # create will call save automatically
-                new_package.orders.create(
-                    owner=request.user,
-                    item=orange,
-                    cnt=orange_cnt
-                )
-            print("create new package: " + str(new_package.id))
-            purchase(package_id=new_package.id)
-    return render(request, 'amazon/success.html', {"info": "Order successful!"})
 
 
 @login_required
