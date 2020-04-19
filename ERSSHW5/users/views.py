@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import UserRegisterForm, UserUpdateForm, ProfileUpdateForm
 from django.contrib.auth.decorators import login_required
+from users.models import Profile
 
 
 def register(request):
@@ -19,17 +20,32 @@ def register(request):
 
 @login_required
 def profile(request):
+    user = request.user
     if request.method == 'POST':
-        username = request.POST["username"]
-        email = request.POST["email"]
-        request.user.username = username
-        request.user.email = email
-        request.user.save()
-
-        return redirect('profile')
+        opera = request.POST["operation"]
+        if opera == "update_profile":
+            username = request.POST["username"]
+            email = request.POST["email"]
+            user.username = username
+            user.email = email
+            user.save()
+        elif opera == "update_password":
+            old_p = request.POST["old_password"]
+            new_p = request.POST["new_password"]
+            if user.check_password(old_p):
+                user.set_password(new_p)
+            print("do something")
+        elif opera == "update_seller":
+            c = request.POST.getlist("register_seller")
+            if len(c) == 0:
+                user.profile.is_seller = False
+            else:
+                user.profile.is_seller = True
+            user.profile.save()
+            print("do something")
 
     context = {
-        "username": request.user.username,
-        "email": request.user.email
+        "username": user.username,
+        "email": user.email
     }
     return render(request, 'users/profile.html', context)

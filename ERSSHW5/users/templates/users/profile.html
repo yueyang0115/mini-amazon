@@ -2,24 +2,35 @@
 {% block content %}
     <div class="content-section">
         <div class="media">
-            <div class="media-body">
+            <div class="media-body card-header" style="border-bottom: 0;">
                 <h2 class="account-heading">{{ user.username }}</h2>
-                <p class="text-secondary">{{ user.email }}</p>
+                <div class="row" style="margin: 0;">
+                    <label class="text-secondary col-3" style="padding: 0;">{{ user.email }}</label>
+                    <label class="text-secondary col-3" style="padding: 0;">
+                        is seller:
+                        {% if user.profile.is_seller %}
+                            Yes
+                        {% else %}
+                            No
+                        {% endif %}
+                    </label>
+                </div>
             </div>
         </div>
 
-        <!-- FORM HERE -->
-        <form method="POST" style="overflow: hidden;">
+        <!-- form for update profile(e.g. name + email) -->
+        <form method="POST" style="overflow: hidden;" class="mt-4">
             {% csrf_token %}
 
             <legend class="border-bottom">Profile</legend>
+            <input type="hidden" name="operation" value="update_profile">
             <div class="row mt-4">
                 <div class="input-group col-md-6">
                     <div class="input-group-prepend">
-                        <span class="input-group-text">Username: </span>
+                        <label class="input-group-text" for="username">Username: </label>
                     </div>
                     <input type="text" class="form-control" name="username" placeholder="username" required
-                           value="{{ username }}">
+                           value="{{ username }}" id="username">
                     <div class="invalid-feedback" style="width: 100%;">
                         username is required
                     </div>
@@ -27,10 +38,10 @@
 
                 <div class="input-group col-md-6">
                     <div class="input-group-prepend">
-                        <span class="input-group-text">Email: </span>
+                        <label class="input-group-text" for="email">Email: </label>
                     </div>
                     <input type="text" class="form-control" name="email" placeholder="email" required
-                           value="{{ email }}">
+                           value="{{ email }}" id="email">
                     <div class="invalid-feedback" style="width: 100%;">
                         email is required
                     </div>
@@ -38,8 +49,61 @@
             </div>
 
             <button class="btn btn-outline-info pull-right mt-4" type="submit">Update</button>
+        </form>
 
+        <!-- form for update password -->
+        <form method="POST" style="overflow: hidden;">
+            {% csrf_token %}
+
+            <legend class="border-bottom">Password</legend>
+            <input type="hidden" name="operation" value="update_password">
+            <div class="input-group mt-4">
+                <div class="col-2" style="padding: 0;">
+                    <div class="input-group-prepend">
+                        <label class="input-group-text" style="width: 100%;">Old Password: </label>
+                    </div>
+                </div>
+                <input type="text" class="form-control" name="old_password" placeholder="old password" required>
+            </div>
+
+            <div class="input-group mt-4">
+                <div class="col-2" style="padding: 0;">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" style="width: 100%;">New Password: </span>
+                    </div>
+                </div>
+                <input type="text" class="form-control" name="new_password" placeholder="new password" required>
+            </div>
+
+            <button class="btn btn-outline-info pull-right mt-4" type="submit">Update</button>
+        </form>
+
+        <!-- form for update seller info -->
+        <form method="POST" style="overflow: hidden;">
+            {% csrf_token %}
+
+            <legend class="border-bottom">Seller Info</legend>
+            <input type="hidden" name="operation" value="update_seller">
+
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="seller" name="register_seller"
+                       id="register_seller"
+                        {% if user.profile.is_seller %}
+                       checked
+                        {% endif %} >
+                <label class="form-check-label" for="register_seller">Register as a seller</label>
+            </div>
+
+            <button class="btn btn-outline-info pull-right mt-4" type="submit">Update</button>
         </form>
 
     </div>
 {% endblock content %}
+
+{% block script %}
+    <script type="javascript">
+        // TODO: use ajax to validate input and show message
+    // 1. show a message box when register successful
+    // 2. show error message when password fail
+    </script>
+{% endblock script %}
