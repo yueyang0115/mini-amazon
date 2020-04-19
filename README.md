@@ -18,12 +18,12 @@ Fancy Amazon!
     - can change the item count of each order dynamically
     - delete any order you don't need anymore
     - the price will change according to your action(e.g. delete order, change count)
-- [ ] Product management + seller.
-    - any user can register as a seller
-    - any sellers have a product management system which he/she can 
+- [x] A **full-featured product management system** + seller.
+    - any authenticated user can register as a seller(or unregister)
+    - sellers will have a product management system which he/she can 
         - publish new products
-        - edit their selling products
-        - delete their selling products
+        - edit their selling products(e.g. name, price, category)
+        - delete(or on sell) their selling products
 - [x] Search bar in home page.
     - search products from all category
     - search products in one specic category
@@ -32,10 +32,14 @@ Fancy Amazon!
     - delete any history order
 - [x] Product category.
     - several category of products, can switch between them in the home page
-- [ ] Build-in data
-    - have some build-in data(e.g. initial items, defualt user), easy deployment
-- [ ] Associate your amazon account with UPS account.
+- [x] Build-in data
+    - use **signals** to make sure have some build-in data(e.g. initial items, defualt user), easy to deploy
+- [x] Edit user information
+    - a separate page to allow user edit his/her personal infromation(e.g. name, email, password)
+- [ ] Associate your amazon account with your UPS account.
     - automatically associate each order with your UPS account
 - [ ] Address book.
     - Store your frequently use addre into address book and fill out the address autimatically when checkout.
 - [x] User-friendly UI and interaction.
+    - all edit info page will have some error handling, will show the error message if failed
+    - use jQuery + aJax to make interaction more smooth(e.g. use partial refresh in shopping cart)
