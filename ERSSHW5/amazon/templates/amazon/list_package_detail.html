@@ -1,7 +1,7 @@
 {% extends "amazon/base.html" %}
 {% block content %}
     <h3>&nbsp;&nbsp;Order Details</h3>
-    <p>&nbsp;&nbsp;&nbsp;&nbsp;Ordered on &nbsp;{{pack.creation_time|date:"F d, Y" }} &nbsp;|&nbsp; Shipping to &nbsp;({{pack.dest_x}}, {{pack.dest_y}})</p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;Ordered on &nbsp;{{pack.creation_time|date:"F d, Y" }} &nbsp;|&nbsp; Shipping to &nbsp;({{pack.dest_x}}, {{pack.dest_y}})  |  Tracking Number {{pack.id}}</p>
 
     <div class="content-section">
         <div class="table-responsive mt-4 border-bottom table-hover">

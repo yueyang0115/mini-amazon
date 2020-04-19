@@ -148,6 +148,10 @@ def list_package(request):
     package_list = Package.objects.filter(owner=request.user).order_by('creation_time')
     item_dict = {}
 
+    if request.method == "POST":
+        search = request.POST["search"]
+        package_list = Package.objects.filter(owner=request.user, id=search)
+
     for pack in package_list:
         orders = Order.objects.filter(package__id=pack.id)
         item_dict[pack.id] = orders
