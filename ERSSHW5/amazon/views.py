@@ -185,11 +185,6 @@ def list_package_detail(request, package_id):
     return render(request, 'amazon/list_package_detail.html', context)
 
 
-# from django import forms
-# class ItemForm(forms.Form):
-#     name = forms.CharField(label="name", max_length=100)
-
-
 @login_required
 def check_item(request):
     if request.is_ajax() and request.method == "POST":
