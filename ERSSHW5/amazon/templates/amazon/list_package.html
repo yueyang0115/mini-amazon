@@ -57,9 +57,9 @@
                             </tr>
                             <tr class = 'row'>
                                 <td class="offset-8 border-top-0">
-                                    <button onclick="delete_order({{ order.id }})" class="btn btn-outline-secondary">
-                                        Delete History
-                                    </button>
+<!--                                    <a href = "/deletepackage/{{ pack.id }}/" class="btn btn-outline-secondary">Delete History</a>-->
+                                    <a href = "{% url "delete-package" pack.id %}" class="btn btn-outline-secondary">Delete History</a>
+
                                 </td>
                                 <td class=" border-top-0">
                                      <a href = "/listpackage/{{ pack.id }}/" class = "btn btn-outline-info" >View Item</a>
@@ -71,7 +71,7 @@
             </div>
 
         {% else %}
-            <h4 class="m-4">Your haven't created any order,
+            <h4 class="m-4">No order found,
                 <a href="{% url 'home' %}">buy something TODAY!</a>
             </h4>
         {% endif %}
