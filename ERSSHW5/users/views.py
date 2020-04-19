@@ -1,8 +1,8 @@
-from django.shortcuts import render, redirect
 from django.contrib import messages
-from .forms import UserRegisterForm, UserUpdateForm, ProfileUpdateForm
 from django.contrib.auth.decorators import login_required
-from users.models import Profile
+from django.shortcuts import render, redirect
+
+from .forms import UserRegisterForm
 
 
 def register(request):
@@ -30,6 +30,7 @@ def profile(request):
             user.email = email
             user.save()
         elif opera == "update_password":
+            # TODO:
             old_p = request.POST["old_password"]
             new_p = request.POST["new_password"]
             if user.check_password(old_p):
@@ -42,7 +43,6 @@ def profile(request):
             else:
                 user.profile.is_seller = True
             user.profile.save()
-            print("do something")
 
     context = {
         "username": user.username,

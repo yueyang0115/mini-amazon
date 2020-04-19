@@ -14,7 +14,19 @@ def default_users():
             is_superuser=False
         )
         mini_amazon.set_password("amazon12345")
+        mini_amazon.profile.is_seller = True
         mini_amazon.save()
+    try:
+        User.objects.get(username="xkw")
+    except User.DoesNotExist:
+        xkw = User.objects.create(
+            username="xkw",
+            email="xkw@noreply.com",
+            is_superuser=False
+        )
+        xkw.set_password("xkw12345")
+        xkw.profile.is_seller = True
+        xkw.save()
 
 
 def default_category():
@@ -29,33 +41,39 @@ def default_items():
     from amazon.models import Item, Category
     if Item.objects.all().count() == 0:
         # at the first time, we should insert some default data
-        owner = User.objects.get(username="mini amazon")
+        amazon = User.objects.get(username="mini amazon")
+        xkw = User.objects.get(username="xkw")
         fruit = Category.objects.get(category="fruit")
         electronic = Category.objects.get(category="electronic")
         Item.objects.create(
             description="apple", price=1.99,
             img="/static/img/apple.jpg", category=fruit,
-            seller=owner
+            seller=xkw
         )
         Item.objects.create(
             description="orange", price=0.99,
             img="/static/img/orange.jpg", category=fruit,
-            seller=owner
+            seller=xkw
         )
         Item.objects.create(
             description="iPad Mini", price=399.99,
             img="/static/img/ipad_mini.jpg", category=electronic,
-            seller=owner
+            seller=amazon
         )
         Item.objects.create(
             description="iPad", price=429.99,
             img="/static/img/ipad.jpg", category=electronic,
-            seller=owner
+            seller=amazon
         )
         Item.objects.create(
             description="iPad Pro", price=1099.99,
             img="/static/img/ipad_pro.jpg", category=electronic,
-            seller=owner
+            seller=amazon
+        )
+        Item.objects.create(
+            description="Magic Keyboard", price=129.99,
+            img="/static/img/magic_keyboard.jpg", category=electronic,
+            seller=amazon
         )
 
 

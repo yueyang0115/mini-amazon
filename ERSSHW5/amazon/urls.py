@@ -13,12 +13,17 @@ urlpatterns = [
     path('checkout/<int:package_id>', views.checkout, name="checkout"),
     # shopping cart page
     path('shopcart', views.shop_cart, name="shop_cart"),
+    # add new item page
+    path('add_update_item/<item_id>', views.add_update_item, name="add_update_item"),
+    # item management page for seller
+    path('item_management', views.item_management, name="item_management"),
+
     # api for change cnt in shopping cart
     path('change_cnt', views.change_cnt, name="change_cnt"),
-    # add new item page
-    path('add_item', views.add_item, name="add_item"),
     # api for check whether an item is already exist
     path('check_item', views.check_item, name="check_item"),
+    # api for delete item
+    path('delete_item', views.delete_item, name="delete_item"),
 
     # list_package page
     path('listpackage/', views.list_package, name='list-package'),
