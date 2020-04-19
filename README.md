@@ -30,8 +30,10 @@ Fancy Amazon!
 - [ ] A **full-featured order page**.
     - search bar --- locate any order quickly
     - delete any history order
-- [ ] Product category.
+- [x] Product category.
     - several category of products, can switch between them in the home page
+- [ ] Build-in data
+    - have some build-in data(e.g. initial items, defualt user), easy deployment
 - [ ] Associate your amazon account with UPS account.
     - automatically associate each order with your UPS account
 - [ ] Address book.
