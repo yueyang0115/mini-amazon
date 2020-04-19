@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from amazon.utils import *
 
 from .models import *
 
@@ -184,6 +185,43 @@ def list_package_detail(request, package_id):
     return render(request, 'amazon/list_package_detail.html', context)
 
 
+# from django import forms
+# class ItemForm(forms.Form):
+#     name = forms.CharField(label="name", max_length=100)
+
+
+@login_required
+def check_item(request):
+    if request.is_ajax() and request.method == "POST":
+        new_item = request.POST["item_description"]
+        try:
+            Item.objects.get(description=new_item)
+            data = {"exist": True}
+        except Item.DoesNotExist:
+            data = {"exist": False}
+        return JsonResponse(data)
+    return JsonResponse({})
+
+
 @login_required
 def add_item(request):
-    return render(request, "amazon/add_item.html")
+    if request.method == "POST":
+        p = request.FILES["thumbnail"]
+        description = request.POST["description"]
+        price = float(request.POST["price"])
+        category = request.POST.getlist("category")[0]
+        save_img(p.name, p)
+        # check whether it's a new category
+        try:
+            c = Category.objects.get(category=category)
+        except Category.DoesNotExist:
+            c = Category(category=category)
+            c.save()
+        new_item = Item(description=description, price=price, category=c, img="/static/img/" + p.name)
+        new_item.save()
+        return render(request, "amazon/success.html")
+
+    context = {}
+    categories = Category.objects.all()
+    context["categories"] = categories
+    return render(request, "amazon/add_item.html", context)

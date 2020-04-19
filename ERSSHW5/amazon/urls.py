@@ -17,6 +17,8 @@ urlpatterns = [
     path('change_cnt', views.change_cnt, name="change_cnt"),
     # add new item page
     path('add_item', views.add_item, name="add_item"),
+    # api for check whether an item is already exist
+    path('check_item', views.check_item, name="check_item"),
 
     # list_package page
     path('listpackage/', views.list_package, name='list-package'),

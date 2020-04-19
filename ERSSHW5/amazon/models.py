@@ -32,7 +32,6 @@ class Item(models.Model):
     description = models.CharField(max_length=100, blank=False)
     # below are some values we might want for advance feature(we can add more)
     price = models.FloatField(default=1.0)
-    # TODO: maybe change to ImageField
     img = models.CharField(max_length=50, default="/static/img/sample.jpg")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, default=1)
 
