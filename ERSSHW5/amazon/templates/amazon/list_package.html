@@ -4,9 +4,9 @@
     <br>
     <div class="content-section">
         {% if package_list %}
-        <div class="table-responsive mt-4 border-bottom table-hover">
-            <table class="table">
-                <thead>
+            <div class="table-responsive mt-4 border-bottom table-hover">
+                <table class="table">
+                    <thead>
                     <tr class="row text-center">
                         <!-- thumbnail -->
                         <th class="col-1">#</th>
@@ -16,21 +16,21 @@
                         <th class="col-5">Items</th>
                         <th class="col-2">Details</th>
                     </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                     {% for pack in package_list %}
                         <tr class="row">
-                            <td class="col-1 text-center">{{pack.id}}</td>
-                            <td class="col-1 text-center">{{pack.status}}</td>
-                            <td class="col-2 text-center">{{pack.creation_time|date:"F d, Y" }}</td>
-                            <td class="col-1 text-center"> &dollar;{{pack.total}}
-                            </td>
+                            <td class="col-1 text-center">{{ pack.id }}</td>
+                            <td class="col-1 text-center">{{ pack.status }}</td>
+                            <td class="col-2 text-center">{{ pack.creation_time|date:"H:i F d, Y" }}</td>
+                            <td class="col-1 text-center"> &dollar;{{ pack.total }}</td>
                             <td class="col-5 text-center">
                                 {% for key, value in item_dict.items %}
                                     {% if key is pack.id %}
                                         {% for order in value %}
                                             {% if forloop.counter < 4 %}
-                                                <img class="img-thumbnail" style="width: 50px; height: 50px" src="{{ order.item.img }}">
+                                                <img class="img-thumbnail" style="width: 50px; height: 50px"
+                                                     src="{{ order.item.img }}">
                                                 {{ order.item.description }}
                                             {% endif %}
                                         {% endfor %}
@@ -42,9 +42,9 @@
                             </td>
                         </tr>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
         {% endif %}
     </div>
 
