@@ -89,8 +89,8 @@ def checkout(request, package_id):
         context["info"] = "Purchase successful."
         context["is_checkout"] = True
         # once user checkout, the price will be final price
-        for order in package.orders:
-            order.item_price = order.item.price
+        #for order in package.orders:
+        #    order.item_price = order.item.price
         # TODO: send the buy request to daemon
         purchase(package.id)
         return render(request, "amazon/success.html", context)
