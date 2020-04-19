@@ -8,7 +8,6 @@ def default_users():
     try:
         User.objects.get(username="mini amazon")
     except User.DoesNotExist:
-        print("")
         mini_amazon = User.objects.create(
             username="mini amazon",
             email="miniamazon@noreply.com",
@@ -18,20 +17,51 @@ def default_users():
         mini_amazon.save()
 
 
+def default_category():
+    from amazon.models import Category
+    if Category.objects.all().count() == 0:
+        Category.objects.create(category="fruit")
+        Category.objects.create(category="electronic")
+
+
 def default_items():
-    print("default items")
-    from amazon.models import Item
+    from django.contrib.auth.models import User
+    from amazon.models import Item, Category
     if Item.objects.all().count() == 0:
-        # TODO: we should insert some new data here
-        print("insert new data")
-    else:
-        print("already has data")
+        # at the first time, we should insert some default data
+        owner = User.objects.get(username="mini amazon")
+        fruit = Category.objects.get(category="fruit")
+        electronic = Category.objects.get(category="electronic")
+        Item.objects.create(
+            description="apple", price=1.99,
+            img="/static/img/apple.jpg", category=fruit,
+            seller=owner
+        )
+        Item.objects.create(
+            description="orange", price=0.99,
+            img="/static/img/orange.jpg", category=fruit,
+            seller=owner
+        )
+        Item.objects.create(
+            description="iPad Mini", price=399.99,
+            img="/static/img/ipad_mini.jpg", category=electronic,
+            seller=owner
+        )
+        Item.objects.create(
+            description="iPad", price=429.99,
+            img="/static/img/ipad.jpg", category=electronic,
+            seller=owner
+        )
+        Item.objects.create(
+            description="iPad Pro", price=1099.99,
+            img="/static/img/ipad_pro.jpg", category=electronic,
+            seller=owner
+        )
 
 
 def migrate_callback(sender, **kwargs):
-    # Your specific logic here
-    print("after migrate")
     default_users()
+    default_category()
     default_items()
 
 

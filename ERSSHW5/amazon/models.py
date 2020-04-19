@@ -21,7 +21,7 @@ Package stands for one pack, contains delivery-related information and list of o
 
 # The category of different items.
 class Category(models.Model):
-    category = models.CharField(max_length=50, blank=False)
+    category = models.CharField(max_length=50, blank=False, null=False)
 
     def __str__(self):
         return self.category
@@ -29,18 +29,22 @@ class Category(models.Model):
 
 # This is the class which represent one specific item.
 class Item(models.Model):
-    description = models.CharField(max_length=100, blank=False)
+    description = models.CharField(max_length=100, blank=False, null=False)
     # below are some values we might want for advance feature(we can add more)
-    price = models.FloatField(default=1.0)
+    price = models.FloatField(default=0.99, blank=False, null=False)
     img = models.CharField(max_length=50, default="/static/img/sample.jpg")
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, default=1)
+    # even we delete the seller or category info, we should still keep the item info
+    # since there will be some history order referring to it
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    seller = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    on_sell = models.BooleanField(default=True)
 
     def __str__(self):
         return self.description
 
 
 # This stands for a package(stands for one purchase).
-# each package can contains several products(e.g. package.products.all())
+# each package can contains several orders(e.g. package.orders.all())
 class Package(models.Model):
     # user info
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="packages")
@@ -67,25 +71,39 @@ class Package(models.Model):
             total += order.total()
         return total
 
+    # NOTE: this value will not change according the item price(aka it's fixed)
+    def total_fixed(self):
+        total = 0
+        for order in self.orders.all():
+            total += order.total_fixed()
+        return total
+
     def __str__(self):
         return "<" + str(self.warehouse) + ", " + self.status + ">"
 
 
-# product = item id + item counts
-# each product should belong to one package
+# order = item id + item counts (+ item price)
 class Order(models.Model):
     # user info
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
     item = models.ForeignKey(Item, on_delete=models.SET_NULL, null=True)
-    cnt = models.IntegerField(default=1)
+    item_cnt = models.IntegerField(default=1)
+    # since seller can change the price, but the price of any finished order can't be change
+    # so we need to store the price info of any finished order
+    item_price = models.FloatField(default=0.99)
     # package id
     package = models.ForeignKey(Package, on_delete=models.CASCADE, related_name="orders", null=True, blank=True)
     creation_time = models.DateTimeField(default=now)
 
     # return the total price for current order
     def total(self):
-        return self.cnt * self.item.price
+        return self.item_cnt * self.item.price
+
+    # return the total price for current order
+    # NOTE: this value will not change according the item price(aka it's fixed)
+    def total_fixed(self):
+        return self.item_cnt * self.item_price
 
     def __str__(self):
-        return "<" + str(self.package_id) + ", <" + str(self.item_id) + ', ' + str(self.cnt) + ">>"
+        return "<" + str(self.package_id) + ", <" + str(self.item_id) + ', ' + str(self.item_cnt) + ">>"
 

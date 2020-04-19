@@ -68,6 +68,11 @@
                                 <i class="fa fa-shopping-cart"></i>
                             </a>
                         </li>
+                        {% if is_seller %}
+                            <li class="nav-item">
+                            <a class="nav-item nav-link" href="{% url 'list-package' %}">My Selling</a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a class="nav-item nav-link" href="{% url 'list-package' %}">Orders</a>
                         </li>

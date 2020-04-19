@@ -59,7 +59,7 @@ def item_detail(request, item_id):
             try:
                 # try to get an existing order
                 exist_order = Order.objects.get(owner=request.user, item=item, package__isnull=True)
-                exist_order.cnt += cnt
+                exist_order.item_cnt += cnt
                 exist_order.save()
             except Order.DoesNotExist:
                 # create a new order
@@ -88,6 +88,9 @@ def checkout(request, package_id):
         print("checkout!")
         context["info"] = "Purchase successful."
         context["is_checkout"] = True
+        # once user checkout, the price will be final price
+        for order in package.orders:
+            order.item_price = order.item.price
         # TODO: send the buy request to daemon
         purchase(package.id)
         return render(request, "amazon/success.html", context)
@@ -141,17 +144,17 @@ def change_cnt(request):
         total_cart = float(request.POST["total_cart"])
         order = Order.objects.get(pk=order_id)
         # lower and upper limit --- 1 ~ 99
-        if operation == "add" and order.cnt < 99:
-            order.cnt += 1
+        if operation == "add" and order.item_cnt < 99:
+            order.item_cnt += 1
             order.save()
             total_cart += order.item.price
-        elif operation == "minus" and order.cnt > 1:
-            order.cnt -= 1
+        elif operation == "minus" and order.item_cnt > 1:
+            order.item_cnt -= 1
             order.save()
             total_cart -= order.item.price
         data = {
             # latest count
-            "cnt": order.cnt,
+            "cnt": order.item_cnt,
             # total price for the order
             "total_order": ("%.2f" % order.total()),
             # total price for all
@@ -207,14 +210,14 @@ def add_item(request):
         description = request.POST["description"]
         price = float(request.POST["price"])
         category = request.POST.getlist("category")[0]
-        save_img(p.name, p)
+        save_img(description + p.name.split(".")[1], p)
         # check whether it's a new category
         try:
             c = Category.objects.get(category=category)
         except Category.DoesNotExist:
             c = Category(category=category)
             c.save()
-        new_item = Item(description=description, price=price, category=c, img="/static/img/" + p.name)
+        new_item = Item(description=description, price=price, category=c, img="/static/img/" + description + p.name.split(".")[1])
         new_item.save()
         return render(request, "amazon/success.html")
 
