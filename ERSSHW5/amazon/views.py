@@ -89,6 +89,7 @@ def checkout(request, package_id):
         context["info"] = "Purchase successful."
         context["is_checkout"] = True
         # TODO: send the buy request to daemon
+        purchase(package.id)
         return render(request, "amazon/success.html", context)
     else:
         context["total"] = package.total()
@@ -185,6 +186,7 @@ def list_package_detail(request, package_id):
     return render(request, 'amazon/list_package_detail.html', context)
 
 
+# check whether an item has already exist
 @login_required
 def check_item(request):
     if request.is_ajax() and request.method == "POST":

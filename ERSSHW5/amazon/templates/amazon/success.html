@@ -3,11 +3,12 @@
     <!-- success page, show success info -->
     {% if is_add_cart %}
         <h1>{{ info }}</h1>
-        <h2 class="mt-3"><a href="{% url "shop_cart" %}">My cart</a></h2>
-        <h2 class="mt-3"><a href="{% url "home" %}">Buy more</a></h2>
+        <h2 class="mt-4"><a href="{% url "shop_cart" %}">My cart</a></h2>
     {% elif is_checkout %}
         <h1>{{ info }}</h1>
+        <h2 class="mt-4"><a href="{% url "list-package" %}">My order</a></h2>
     {% else %}
         <h1>Succeed!</h1>
     {% endif %}
+    <h2 class="mt-4"><a href="{% url "home" %}">Buy more</a></h2>
 {% endblock content %}

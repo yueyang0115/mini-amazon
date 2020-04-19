@@ -65,9 +65,9 @@ public class MockUPS {
         builder1.setY(2);
 
         UInitTruck.Builder builder2 = UInitTruck.newBuilder();
-        builder1.setId(3);
-        builder1.setX(3);
-        builder1.setY(3);
+        builder2.setId(3);
+        builder2.setX(3);
+        builder2.setY(3);
 
         UConnect.Builder connect =  UConnect.newBuilder();
         connect.setIsAmazon(false);

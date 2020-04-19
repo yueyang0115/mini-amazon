@@ -129,26 +129,26 @@ public class AmazonDaemon {
      */
     public void runAll() {
         // TODO: debug info, mock a new purchase request after 3s and another after 2s
-        new Thread(() -> {
-            try {
-                Thread.sleep(3000);
-                // WARNING!!! only two package while debugging(mock UPS only have two trucks)
-                List<String> packages = new ArrayList<>(Arrays.asList("36\n", "37\n"));
-                for (String p : packages){
-                    System.out.println("try to connect to daemon server");
-                    Socket socket = new Socket("localhost", 8888);
-                    PrintWriter out = new PrintWriter(socket.getOutputStream());
-                    out.write(p);
-                    out.flush();
-                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    System.out.println("receive confirm from amazon: " + in.readLine());
-                    socket.close();
-                    Thread.sleep(1000);
-                }
-            }catch (Exception e){
-                System.err.println(e.toString());
-            }
-        }).start();
+//        new Thread(() -> {
+//            try {
+//                Thread.sleep(3000);
+//                // WARNING!!! only two package while debugging(mock UPS only have two trucks)
+//                List<String> packages = new ArrayList<>(Arrays.asList("36\n", "37\n"));
+//                for (String p : packages){
+//                    System.out.println("try to connect to daemon server");
+//                    Socket socket = new Socket("localhost", 8888);
+//                    PrintWriter out = new PrintWriter(socket.getOutputStream());
+//                    out.write(p);
+//                    out.flush();
+//                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//                    System.out.println("receive confirm from amazon: " + in.readLine());
+//                    socket.close();
+//                    Thread.sleep(1000);
+//                }
+//            }catch (Exception e){
+//                System.err.println(e.toString());
+//            }
+//        }).start();
 
         // prepare all core threads
         threadPool.prestartAllCoreThreads();
@@ -601,7 +601,7 @@ public class AmazonDaemon {
      */
     synchronized AResponses.Builder send(ACommands.Builder commands, long seqNum){
         // TODO: debug info
-        commands.setSimspeed(1000);
+        commands.setSimspeed(30);
         System.out.println("amazon sending(to world): " + commands.toString());
         // if not receive the ack within 10s, it will resend the message
         Timer timer = new Timer();
