@@ -6,10 +6,10 @@ def default_users():
     # check and creat a default user if not exist
     from django.contrib.auth.models import User
     try:
-        User.objects.get(username="mini amazon")
+        User.objects.get(username="mini_amazon")
     except User.DoesNotExist:
         mini_amazon = User.objects.create(
-            username="mini amazon",
+            username="mini_amazon",
             email="miniamazon@noreply.com",
             is_superuser=False
         )
@@ -41,7 +41,7 @@ def default_items():
     from amazon.models import Item, Category
     if Item.objects.all().count() == 0:
         # at the first time, we should insert some default data
-        amazon = User.objects.get(username="mini amazon")
+        amazon = User.objects.get(username="mini_amazon")
         xkw = User.objects.get(username="xkw")
         fruit = Category.objects.get(category="fruit")
         electronic = Category.objects.get(category="electronic")
