@@ -47,7 +47,7 @@ public class AmazonDaemon {
     private List<AInitWarehouse> warehouses;
 
     public AmazonDaemon() throws IOException {
-        ups = new MockUPS();
+//        ups = new MockUPS();
         this.seqNum = 0;
         // set up the TCP connection to the world(not connected yet)
         Socket socket = new Socket(WORLD_HOST, WORLD_PORT);
@@ -78,7 +78,7 @@ public class AmazonDaemon {
      */
     public void config() throws IOException {
         // TODO: debug info
-        ups.init();
+//        ups.init();
 
         System.out.println("Daemon is running...");
         System.out.println("Listening connection from UPS at 9999");
@@ -285,7 +285,7 @@ public class AmazonDaemon {
         checkPackageID(packageID);
         Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
-            if (false){
+            if (true){
                 AUpick.Builder pick = AUpick.newBuilder();
                 pick.setPackage(p.getPack());
                 pick.setSeqnum(getSeqNum());
@@ -332,7 +332,7 @@ public class AmazonDaemon {
 	    System.out.println("delivering: " + packageID);
         p.setStatus(Package.DELIVERING);
         threadPool.execute(() -> {
-            if (false){
+            if (true){
                 AUdeliver.Builder deliver = AUdeliver.newBuilder();
                 deliver.setPackage(p.getPack());
                 deliver.setSeqnum(getSeqNum());
