@@ -29,18 +29,21 @@
                             <td class="col-1 align-self-center border-top-0">
                                 <input class="form-check-input" type="checkbox" value="{{ order.id }}"
                                        name="checked_orders" id="checkbox{{ order.id }}">
-                                <label class="form-check-label" for="checkbox{{ order.id }}"> {{ forloop.counter }}</label>
+                                <label class="form-check-label"
+                                       for="checkbox{{ order.id }}"> {{ forloop.counter }}</label>
                             </td>
                             <td class="col-3 text-left border-top-0">
                                 <img class="img-thumbnail" style="width: 50px; height: 50px" src="{{ order.item.img }}">
                                 {{ order.item.description }}
                             </td>
                             <td class="col-2 align-self-center border-top-0">
-                                <button type="button" class="btn" onclick="change_cnt({{ order.id }}, false)"><i
-                                        class="fa fa-minus-square-o"></i></button>
+                                <button type="button" class="btn" onclick="change_cnt({{ order.id }}, false)">
+                                    <i class="fa fa-minus-square-o"></i>
+                                </button>
                                 <span id="cnt{{ order.id }}">{{ order.cnt }}</span>
-                                <button type="button" class="btn" onclick="change_cnt({{ order.id }}, true)"><i
-                                        class="fa fa-plus-square-o"></i></button>
+                                <button type="button" class="btn" onclick="change_cnt({{ order.id }}, true)">
+                                    <i class="fa fa-plus-square-o"></i>
+                                </button>
                             </td>
                             <td class="col-2 align-self-center border-top-0">
                                 &dollar; {{ order.item.price|floatformat:2 }}</td>
@@ -127,7 +130,7 @@
                     $("#total_order" + id).text(result["total_order"]);
                     $("#cnt" + id).text(result["cnt"]);
                     // only update the total price if this order is checked
-                    if ($("#checkbox" + id).is(":checked")){
+                    if ($("#checkbox" + id).is(":checked")) {
                         $("#total_cart").text(result["total_cart"]);
                     }
                 },
@@ -158,7 +161,7 @@
                         break;
                     }
                 }
-                if (i === checkboxes.length){
+                if (i === checkboxes.length) {
                     $("#check_all").prop("checked", true);
                 }
             } else {

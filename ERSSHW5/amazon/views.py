@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from amazon.utils import *
 
 from .models import *
 
@@ -17,6 +18,22 @@ def home(request):
         search = request.POST["search"]
         items = items.filter(description__icontains=search)
     context["items"] = items
+    context["categories"] = Category.objects.all()
+    context["category"] = "All"
+    return render(request, "amazon/home.html", context)
+
+
+# Home page, but with specific category
+def home_category(request, category):
+    context = {}
+    category = Category.objects.get(category=category)
+    items = Item.objects.all().order_by("id").filter(category=category)
+    if request.method == "POST":
+        search = request.POST["search"]
+        items = items.filter(description__icontains=search)
+    context["items"] = items
+    context["categories"] = Category.objects.all()
+    context["category"] = category
     return render(request, "amazon/home.html", context)
 
 
@@ -166,7 +183,44 @@ def list_package(request):
 @login_required
 def list_package_detail(request, package_id):
     context = {
-        'product_list': Order.objects.filter(package__id = package_id),
+        'product_list': Order.objects.filter(package__id=package_id),
         'pack': Package.objects.get(owner=request.user, id=package_id),
     }
     return render(request, 'amazon/list_package_detail.html', context)
+
+
+@login_required
+def check_item(request):
+    if request.is_ajax() and request.method == "POST":
+        new_item = request.POST["item_description"]
+        try:
+            Item.objects.get(description=new_item)
+            data = {"exist": True}
+        except Item.DoesNotExist:
+            data = {"exist": False}
+        return JsonResponse(data)
+    return JsonResponse({})
+
+
+@login_required
+def add_item(request):
+    if request.method == "POST":
+        p = request.FILES["thumbnail"]
+        description = request.POST["description"]
+        price = float(request.POST["price"])
+        category = request.POST.getlist("category")[0]
+        save_img(p.name, p)
+        # check whether it's a new category
+        try:
+            c = Category.objects.get(category=category)
+        except Category.DoesNotExist:
+            c = Category(category=category)
+            c.save()
+        new_item = Item(description=description, price=price, category=c, img="/static/img/" + p.name)
+        new_item.save()
+        return render(request, "amazon/success.html")
+
+    context = {}
+    categories = Category.objects.all()
+    context["categories"] = categories
+    return render(request, "amazon/add_item.html", context)

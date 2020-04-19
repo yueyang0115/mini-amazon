@@ -56,18 +56,24 @@ public class MockUPS {
         // init two trucks
         UInitTruck.Builder builder = UInitTruck.newBuilder();
         builder.setId(1);
-        builder.setX(2);
-        builder.setY(2);
+        builder.setX(1);
+        builder.setY(1);
 
         UInitTruck.Builder builder1 = UInitTruck.newBuilder();
         builder1.setId(2);
-        builder1.setX(1);
-        builder1.setY(1);
+        builder1.setX(2);
+        builder1.setY(2);
+
+        UInitTruck.Builder builder2 = UInitTruck.newBuilder();
+        builder1.setId(3);
+        builder1.setX(3);
+        builder1.setY(3);
 
         UConnect.Builder connect =  UConnect.newBuilder();
         connect.setIsAmazon(false);
         connect.addTrucks(builder);
         connect.addTrucks(builder1);
+        connect.addTrucks(builder2);
         if (worldID >= 0){
             connect.setWorldid(worldID);
         }
