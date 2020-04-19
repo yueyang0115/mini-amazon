@@ -52,7 +52,7 @@ def item_detail(request, item_id):
             package.orders.create(
                 owner=request.user,
                 item=item,
-                cnt=cnt
+                item_cnt=cnt
             )
             return redirect(reverse("checkout", kwargs={'package_id': package.id}))
         else:
@@ -63,7 +63,7 @@ def item_detail(request, item_id):
                 exist_order.save()
             except Order.DoesNotExist:
                 # create a new order
-                order = Order(owner=request.user, item=item, cnt=cnt)
+                order = Order(owner=request.user, item=item, item_cnt=cnt)
                 order.save()
             context["info"] = "Successfully add to cart."
             context["is_add_cart"] = True
