@@ -2,9 +2,9 @@
 {% block content %}
     <h1>
         {% if item %}
-            Edit Item
+            Edit Product
         {% else %}
-            Add Item
+            Add Product
         {% endif %}
     </h1>
     <form name="item_form" action="{% url "add_update_item" "-1" %}" method="POST" enctype="multipart/form-data"
