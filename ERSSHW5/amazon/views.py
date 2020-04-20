@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, Http404
@@ -138,6 +139,10 @@ def list_package(request):
     package_list = Package.objects.filter(owner=request.user).order_by('creation_time')
     item_dict = {}
 
+    if request.method == "POST":
+        search = request.POST["search"]
+        package_list = Package.objects.filter(owner=request.user, id=search)
+
     for pack in package_list:
         orders = Order.objects.filter(package__id=pack.id)
         item_dict[pack.id] = orders
@@ -148,6 +153,28 @@ def list_package(request):
     }
     return render(request, 'amazon/list_package.html', context)
 
+@login_required
+def delete_package(request, package_id):
+    Package.objects.get(owner=request.user, id=package_id).delete()
+    return HttpResponseRedirect(reverse('list-package'))
+    # #copy from list_package
+    # package_list = Package.objects.filter(owner=request.user).order_by('creation_time')
+    # item_dict = {}
+    #
+    # if request.method == "POST":
+    #     search = request.POST["search"]
+    #     package_list = Package.objects.filter(owner=request.user, id=search)
+    #
+    # for pack in package_list:
+    #     orders = Order.objects.filter(package__id=pack.id)
+    #     item_dict[pack.id] = orders
+    #
+    # context = {
+    #     'package_list': package_list,
+    #     'item_dict': item_dict,
+    # }
+    #
+    # return redirect('amazon/list_package.html', context)
 
 @login_required
 def list_package_detail(request, package_id):
