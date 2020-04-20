@@ -27,7 +27,7 @@ Fancy Amazon!
 - [x] Search bar in home page.
     - search products from all category
     - search products in one specic category
-- [ ] A **full-featured order page**.
+- [x] A **full-featured order page**.
     - search bar --- locate any order quickly
     - delete any history order
 - [x] Product category.
