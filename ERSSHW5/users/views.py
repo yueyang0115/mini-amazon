@@ -57,6 +57,22 @@ def profile(request):
             else:
                 user.profile.is_seller = True
             user.profile.save()
+        elif opera == "update_optional":
+            ups_name = request.POST["ups_name"]
+            default_x = request.POST["default_x"]
+            default_y = request.POST["default_y"]
+            if len(default_x) > 0:
+                default_x = int(default_x)
+                user.profile.default_x = default_x
+            else:
+                user.profile.default_x = -1
+            if len(default_y) > 0:
+                default_y = int(default_y)
+                user.profile.default_y = default_y
+            else:
+                user.profile.default_y = -1
+            user.profile.ups_name = ups_name
+            user.save()
 
     context["help_text"] = password_validators_help_text_html
     return render(request, 'users/profile.html', context)

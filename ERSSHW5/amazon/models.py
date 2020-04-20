@@ -19,6 +19,15 @@ Package stands for one pack, contains delivery-related information and list of o
 """
 
 
+# warehouse class, used to initial a list of ware house
+class WareHouse(models.Model):
+    x = models.IntegerField(default=1)
+    y = models.IntegerField(default=1)
+
+    def __str__(self):
+        return "<" + str(self.x) + ", " + str(self.y) + ">"
+
+
 # The category of different items.
 class Category(models.Model):
     category = models.CharField(max_length=50, blank=False, null=False)
@@ -64,6 +73,8 @@ class Package(models.Model):
     dest_x = models.IntegerField(default=10)
     dest_y = models.IntegerField(default=10)
     creation_time = models.DateTimeField(default=now)
+    # associate ups account name for this package(optional)
+    ups_name = models.CharField(max_length=50, default="", blank=True)
 
     def total(self):
         total = 0

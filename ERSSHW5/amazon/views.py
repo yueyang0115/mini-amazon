@@ -78,13 +78,25 @@ def checkout(request, package_id):
     context = {}
     # actually checkout
     if request.method == "POST":
-        x = request.POST["x"]
-        y = request.POST["y"]
+        x = int(request.POST["x"])
+        y = int(request.POST["y"])
+        ups_name = ""
+        if "ups_name" in request.POST.keys():
+            ups_name = request.POST["ups_name"]
+        # save the value into profile
+        checked = request.POST.getlist("checkbox")
+        if "ups" in checked:
+            request.user.profile.ups_name = ups_name
+        if "address" in checked:
+            request.user.profile.default_x = x
+            request.user.profile.default_y = y
+        request.user.save()
         package.dest_x = x
         package.dest_y = y
+        package.ups_name = ups_name
+        package.warehouse = cal_warehouse(x, y)
         package.save()
-        print(package.dest_x + "  " + package.dest_y)
-        print("checkout!")
+        print("deliver to: " + str(package.dest_x) + "  " + str(package.dest_y))
         context["info"] = "Purchase successful."
         context["is_checkout"] = True
         # once user checkout, the price will be final price
@@ -149,14 +161,16 @@ def list_package(request):
 
     context = {
         'package_list': package_list,
-        'item_dict':item_dict,
+        'item_dict': item_dict,
     }
     return render(request, 'amazon/list_package.html', context)
+
 
 @login_required
 def delete_package(request, package_id):
     Package.objects.get(owner=request.user, id=package_id).delete()
     return HttpResponseRedirect(reverse('list-package'))
+
 
 @login_required
 def list_package_detail(request, package_id):

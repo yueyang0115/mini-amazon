@@ -6,30 +6,57 @@
             <form class="needs-validation" novalidate action="{% url "checkout" package.id %}" method="post">
                 {% csrf_token %}
                 <div class="mb-3">
-                    <label for="email">UPS Account Name <span class="text-muted">(Optional)</span></label>
-                    <input type="email" class="form-control" id="email" placeholder="admin">
+                    <label for="ups_name">UPS Account Name <span class="text-muted">(Optional)</span></label>
+                    <input type="text" class="form-control" id="ups_name" name="ups_name" placeholder="admin"
+                           value=
+                                   {% if user.profile.ups_name %}
+                                       {{ user.profile.ups_name }}
+                                   {% else %}
+                                       ""
+                                   {% endif %}>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="ups" name="checkbox"
+                               id="checkbox_ups_name" checked>
+                        <label class="form-check-label" for="checkbox_ups_name">save to profile</label>
+                    </div>
                 </div>
 
                 <div class="mb-3">
                     <label for="address">Address</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text">X: </span>
+                    <div class="row">
+                        <div class="input-group col-md-6">
+                            <div class="input-group-prepend">
+                                <label for="x" class="input-group-text">X: </label>
+                            </div>
+                            <input type="number" min=0 max=150 class="form-control" name="x" placeholder="x coordinate"
+                                   id="x" required value=
+                                           {% if user.profile.default_x != -1 %}
+                                               {{ user.profile.default_x }}
+                                           {% endif %}>
+                            <div class="invalid-feedback" style="width: 100%;">
+                                X value is required.
+                            </div>
                         </div>
-                        <input type="number" class="form-control" name="x" placeholder="x coordinate" required>
-                        <div class="invalid-feedback" style="width: 100%;">
-                            X value is required.
+
+                        <div class="input-group col-md-6">
+                            <div class="input-group-prepend">
+                                <label for="y" class="input-group-text">Y: </label>
+                            </div>
+                            <input type="number" min=0 max=150 class="form-control" id="y" name="y"
+                                   placeholder="y coordinate" required value=
+                                           {% if user.profile.default_y != -1 %}
+                                               {{ user.profile.default_y }}
+                                           {% endif %}>
+                            <div class="invalid-feedback" style="width: 100%;">
+                                Y value is required.
+                            </div>
                         </div>
                     </div>
 
-                    <div class="input-group mt-2">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text">Y: </span>
-                        </div>
-                        <input type="number" class="form-control" name="y" placeholder="y coordinate" required>
-                        <div class="invalid-feedback" style="width: 100%;">
-                            Y value is required.
-                        </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="address" name="checkbox"
+                               id="checkbox_address" checked>
+                        <label class="form-check-label" for="checkbox_address">save to profile</label>
                     </div>
                 </div>
 
@@ -39,7 +66,8 @@
 
                 <div class="d-block my-3">
                     <div class="custom-control custom-radio">
-                        <input id="credit" name="paymentMethod" type="radio" class="custom-control-input" checked="" required>
+                        <input id="credit" name="paymentMethod" type="radio" class="custom-control-input" checked=""
+                               required>
                         <label class="custom-control-label" for="credit">Credit card</label>
                     </div>
                     <div class="custom-control custom-radio">
@@ -71,7 +99,8 @@
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <label for="cc-expiration">Expiration</label>
-                        <input type="text" class="form-control" id="cc-expiration" placeholder="" required="" value="08/23">
+                        <input type="text" class="form-control" id="cc-expiration" placeholder="" required=""
+                               value="08/23">
                         <div class="invalid-feedback">
                             Expiration date required
                         </div>

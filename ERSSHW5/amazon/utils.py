@@ -3,6 +3,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from PIL import Image
+from amazon.models import WareHouse
+import math
 
 # email address info
 SMTP_SERVER = 'smtp.gmail.com:587'
@@ -31,6 +33,19 @@ def save_img(name, data):
     img.save('./amazon/static/img/%s' % name)
 
 
+# calculate the nearest warehouse for the location
+def cal_warehouse(x, y):
+    whs = WareHouse.objects.all()
+    min_id = 1
+    min_dest = 65535
+    for wh in whs:
+        dest = math.sqrt(math.pow(wh.x - x, 2) + math.pow(wh.y - y, 2))
+        if dest < min_dest:
+            min_dest = dest
+            min_id = wh.id
+    return min_id
+
+
 # Tell the daemon to purchase something, which specify by the package id.
 # front-end should first store the package into DB and then notify the daemon by sending the id.
 def purchase(package_id):
@@ -51,4 +66,4 @@ def purchase(package_id):
 
 
 if __name__ == '__main__':
-    purchase(1)
+    print(math.sqrt(math.pow(1, 2) + math.pow(1, 2)))

@@ -31,3 +31,4 @@ def check_password(old_p, new_p, user):
             errors.extend(error.messages)
         return errors
     return []
+

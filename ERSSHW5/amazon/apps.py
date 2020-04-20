@@ -2,8 +2,8 @@ from django.apps import AppConfig
 from django.db.models.signals import post_migrate
 
 
+# This function will check whether there are default users, and will create two if not.
 def default_users():
-    # check and creat a default user if not exist
     from django.contrib.auth.models import User
     try:
         User.objects.get(username="mini_amazon")
@@ -29,6 +29,7 @@ def default_users():
         xkw.save()
 
 
+# This function will check whether there are default category of products, and will create if not.
 def default_category():
     from amazon.models import Category
     if Category.objects.all().count() == 0:
@@ -36,6 +37,7 @@ def default_category():
         Category.objects.create(category="electronic")
 
 
+# This function will check whether there are default products, and will create if not.
 def default_items():
     from django.contrib.auth.models import User
     from amazon.models import Item, Category
@@ -77,10 +79,18 @@ def default_items():
         )
 
 
+def default_warehouse():
+    from amazon.models import WareHouse
+    # create 10 warehouse
+    for x, y in zip(range(10, 110, 10), range(10, 110, 10)):
+        WareHouse.objects.create(x=x, y=y)
+
+
 def migrate_callback(sender, **kwargs):
     default_users()
     default_category()
     default_items()
+    default_warehouse()
 
 
 class AmazonConfig(AppConfig):
