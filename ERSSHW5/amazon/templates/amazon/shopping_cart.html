@@ -7,7 +7,7 @@
         <form id="form_orders" name="form_orders" action="{% url 'shop_cart' %}" method="post">
             {% csrf_token %}
             <div class="table-responsive mt-4 table-hover">
-                <table class="table">
+                <table id="order_table" class="table">
                     <thead>
                     <tr class="row text-center">
                         <th class="col-1">
@@ -15,10 +15,26 @@
                             <label class="form-check-label" for="check_all">#</label>
                         </th>
                         <!-- thumbnail + description -->
-                        <th class="col-3 text-left">Item</th>
-                        <th class="col-2">Qty</th>
-                        <th class="col-2">Price</th>
-                        <th class="col-2">Total</th>
+                        <th class="col-3 text-left">
+                            <a href="#" style="color: #080000;">Item
+                                <i class="fa fa-sort"></i>
+                            </a>
+                        </th>
+                        <th class="col-2">
+                            <a href="#" style="color: #080000;">Qty
+                                <i class="fa fa-sort"></i>
+                            </a>
+                        </th>
+                        <th class="col-2">
+                            <a href="#" style="color: #080000;">Price
+                                <i class="fa fa-sort"></i>
+                            </a>
+                        </th>
+                        <th class="col-2">
+                            <a href="#" style="color: #080000;">Total
+                                <i class="fa fa-sort"></i>
+                            </a>
+                        </th>
                         <!-- delete button -->
                         <th class="col-2"></th>
                     </tr>
@@ -82,6 +98,10 @@
 
 <!-- javascript -->
 {% block script %}
+    <!-- jQiery table sorter plugin -->
+    {% load static %}
+    <script src="{% static "js/jquery.tablesorter.js" %}"></script>
+
     <script type="text/javascript">
         function delete_order(order_id) {
             add_operation_type(document.form_orders, "delete")
@@ -175,6 +195,11 @@
         $(function () {
             $(":checkbox").prop("checked", true);
             cal_total();
+            $("#order_table").tablesorter({
+                headers: {
+                    0: {sorter: false}
+                }
+            });
         })
 
         // calculate the total price
