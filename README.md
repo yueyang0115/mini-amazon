@@ -15,9 +15,10 @@ Fancy Amazon!
 
 - [x] A **full-featured shopping cart**(implemented by jQuery + Ajax).
     - check(& uncheck) any orders you want
-    - can change the item count of each order dynamically
+    - change the item count of each order **dynamically**
     - delete any order you don't need anymore
     - the price will change according to your action(e.g. delete order, change count)
+    - **sort** the orders via different constraints
 - [x] A **full-featured product management system** + seller.
     - any authenticated user can register as a seller(or unregister)
     - sellers will have a product management system which he/she can 
@@ -37,7 +38,7 @@ Fancy Amazon!
     - we will allocate the nearest warehouse to each package(to facilate the delivery process)
 - [x] Product category.
     - several category of products, can switch between them in the home page
-- [x] Edit user information
+- [x] Edit user profile
     - a separate page to allow user edit his/her personal infromation(e.g. name, email, password)
 - [x] Associate your amazon account with your UPS account.
     - automatically associate each order with your UPS account
