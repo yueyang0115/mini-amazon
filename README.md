@@ -32,7 +32,7 @@ Fancy Amazon!
     - delete any history order
 - [x] Build-in data
     - use **signals** to make sure have some build-in data(e.g. initial items, defualt user), easy to deploy
-- [x] Warehouse dynamic alloccation.
+- [x] Warehouse **dynamic alloccation**.
     - we have 10 build-in warehouses(as part of the initial data)
     - we will allocate the nearest warehouse to each package(to facilate the delivery process)
 - [x] Product category.
