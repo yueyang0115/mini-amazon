@@ -39,10 +39,10 @@ Fancy Amazon!
     - several category of products, can switch between them in the home page
 - [x] Edit user information
     - a separate page to allow user edit his/her personal infromation(e.g. name, email, password)
-- [ ] Associate your amazon account with your UPS account.
+- [x] Associate your amazon account with your UPS account.
     - automatically associate each order with your UPS account
-- [ ] Address book.
-    - Store your frequently use addre into address book and fill out the address autimatically when checkout.
+- [x] Address book.
+    - store your frequently use address, fill out the address autimatically when checkout next time
 - [x] User-friendly UI and interaction.
     - all edit info page will have some error handling, will show the error message if failed
     - use jQuery + aJax to make interaction more smooth(e.g. use partial refresh in shopping cart)
