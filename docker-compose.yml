@@ -15,9 +15,3 @@ services:
       - "23456:23456"
     depends_on:
       - mydb
-  daemon:
-    build: ./daemon
-      command: ./deploy_server.sh
-      ports:
-        - "8888:8888"
-        - "9999:9999"

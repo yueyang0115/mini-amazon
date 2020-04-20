@@ -2,19 +2,17 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from amazon.utils import *
 
 from .models import *
-
-# Create your views here.
 from .utils import purchase
 
 
 # Home page, used to show a list of items.
 def home(request):
     context = {}
-    items = Item.objects.all().order_by("id")
+    items = Item.objects.all().filter(on_sell=True).order_by("id")
     if request.method == "POST":
         search = request.POST["search"]
         items = items.filter(description__icontains=search)
@@ -53,18 +51,18 @@ def item_detail(request, item_id):
             package.orders.create(
                 owner=request.user,
                 item=item,
-                cnt=cnt
+                item_cnt=cnt
             )
             return redirect(reverse("checkout", kwargs={'package_id': package.id}))
         else:
             try:
                 # try to get an existing order
                 exist_order = Order.objects.get(owner=request.user, item=item, package__isnull=True)
-                exist_order.cnt += cnt
+                exist_order.item_cnt += cnt
                 exist_order.save()
             except Order.DoesNotExist:
                 # create a new order
-                order = Order(owner=request.user, item=item, cnt=cnt)
+                order = Order(owner=request.user, item=item, item_cnt=cnt)
                 order.save()
             context["info"] = "Successfully add to cart."
             context["is_add_cart"] = True
@@ -89,7 +87,11 @@ def checkout(request, package_id):
         print("checkout!")
         context["info"] = "Purchase successful."
         context["is_checkout"] = True
+        # once user checkout, the price will be final price
+        for order in package.orders.all():
+            order.item_price = order.item.price
         # TODO: send the buy request to daemon
+        # purchase(package.id)
         return render(request, "amazon/success.html", context)
     else:
         context["total"] = package.total()
@@ -130,35 +132,6 @@ def shop_cart(request):
         total += o.total()
     context = {"orders": orders, "total": total}
     return render(request, "amazon/shopping_cart.html", context)
-
-
-# ajax api for changing item count in the shopping cart
-@login_required
-def change_cnt(request):
-    if request.is_ajax() and request.method == "POST":
-        order_id = request.POST["order_id"]
-        operation = request.POST["operation"]
-        total_cart = float(request.POST["total_cart"])
-        order = Order.objects.get(pk=order_id)
-        # lower and upper limit --- 1 ~ 99
-        if operation == "add" and order.cnt < 99:
-            order.cnt += 1
-            order.save()
-            total_cart += order.item.price
-        elif operation == "minus" and order.cnt > 1:
-            order.cnt -= 1
-            order.save()
-            total_cart -= order.item.price
-        data = {
-            # latest count
-            "cnt": order.cnt,
-            # total price for the order
-            "total_order": ("%.2f" % order.total()),
-            # total price for all
-            "total_cart": ("%.2f" % total_cart)
-        }
-        return JsonResponse(data)
-    return JsonResponse({})
 
 
 @login_required
@@ -212,12 +185,104 @@ def list_package_detail(request, package_id):
     return render(request, 'amazon/list_package_detail.html', context)
 
 
+""" ====== Below are functions for seller ====== """
+
+
+@login_required
+def item_management(request):
+    items = Item.objects.filter(seller=request.user).all()
+    context = {"items": items}
+    return render(request, "amazon/item_management.html", context)
+
+
+@login_required
+def add_update_item(request, item_id):
+    if not request.user.profile.is_seller:
+        raise Http404("Your are not a seller")
+    if request.method == "POST":
+        item = request.POST["item_id"]
+        description = request.POST["description"]
+        price = float(request.POST["price"])
+        category = request.POST.getlist("category")[0]
+        # check whether it's a new category
+        try:
+            c = Category.objects.get(category=category)
+        except Category.DoesNotExist:
+            c = Category(category=category)
+            c.save()
+        if id == -1:
+            p = request.FILES["thumbnail"]
+            img_name = description.replace(" ", "_") + "_" + request.user.username + "." + p.name.split(".")[1]
+            save_img(img_name, p)
+            # new item
+            new_item = Item(
+                description=description,
+                price=price,
+                category=c,
+                img="/static/img/" + img_name,
+                seller=request.user
+            )
+            new_item.save()
+            context = {"is_add_item": True, "info": "Successful add the item."}
+            return render(request, "amazon/success.html", context)
+        else:
+            # existing item
+            old_item = Item.objects.get(pk=item)
+            old_item.description = description
+            old_item.price = price
+            old_item.category = c
+            old_item.save()
+            return redirect(reverse("item_management"))
+
+    context = {}
+    categories = Category.objects.all()
+    context["categories"] = categories
+    if item_id != "-1":
+        context["item"] = Item.objects.get(pk=int(item_id))
+    return render(request, "amazon/item_add_update.html", context)
+
+
+""" ====== Below are some ajax api ====== """
+
+
+# ajax api for changing item count in the shopping cart
+@login_required
+def change_cnt(request):
+    if request.is_ajax() and request.method == "POST":
+        order_id = request.POST["order_id"]
+        operation = request.POST["operation"]
+        total_cart = float(request.POST["total_cart"])
+        order = Order.objects.get(pk=order_id)
+        # lower and upper limit --- 1 ~ 99
+        if operation == "add" and order.item_cnt < 99:
+            order.item_cnt += 1
+            order.save()
+            total_cart += order.item.price
+        elif operation == "minus" and order.item_cnt > 1:
+            order.item_cnt -= 1
+            order.save()
+            total_cart -= order.item.price
+        data = {
+            # latest count
+            "cnt": order.item_cnt,
+            # total price for the order
+            "total_order": ("%.2f" % order.total()),
+            # total price for all
+            "total_cart": ("%.2f" % total_cart)
+        }
+        return JsonResponse(data)
+    return JsonResponse({})
+
+
+# check whether an item has already exist
 @login_required
 def check_item(request):
     if request.is_ajax() and request.method == "POST":
         new_item = request.POST["item_description"]
+        item_id = request.POST["item_id"]
         try:
-            Item.objects.get(description=new_item)
+            # valid, as long as the item name has no duplication within current seller
+            Item.objects.exclude(pk=int(item_id)).filter(seller=request.user).get(description=new_item)
             data = {"exist": True}
         except Item.DoesNotExist:
             data = {"exist": False}
@@ -226,24 +291,19 @@ def check_item(request):
 
 
 @login_required
-def add_item(request):
-    if request.method == "POST":
-        p = request.FILES["thumbnail"]
-        description = request.POST["description"]
-        price = float(request.POST["price"])
-        category = request.POST.getlist("category")[0]
-        save_img(p.name, p)
-        # check whether it's a new category
-        try:
-            c = Category.objects.get(category=category)
-        except Category.DoesNotExist:
-            c = Category(category=category)
-            c.save()
-        new_item = Item(description=description, price=price, category=c, img="/static/img/" + p.name)
-        new_item.save()
-        return render(request, "amazon/success.html")
-
-    context = {}
-    categories = Category.objects.all()
-    context["categories"] = categories
-    return render(request, "amazon/add_item.html", context)
+def delete_item(request):
+    if request.is_ajax() and request.method == "POST":
+        item_id = request.POST["item_id"]
+        data = {}
+        item = Item.objects.get(pk=int(item_id))
+        if item.on_sell:
+            item.on_sell = False
+            data["status"] = "removed"
+            data["action"] = "Sell"
+        else:
+            item.on_sell = True
+            data["status"] = "selling"
+            data["action"] = "Delete"
+        item.save()
+        return JsonResponse(data)
+    return JsonResponse({})

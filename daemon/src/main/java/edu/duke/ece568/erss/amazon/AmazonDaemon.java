@@ -19,8 +19,8 @@ import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
  */
 // TODO: consider parse response in a separate function(sometimes a response of one package will contains information of the other)
 public class AmazonDaemon {
-     private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
-//    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+    //private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
+    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
     private static final int WORLD_PORT = 23456;
     // the default timeout for each request
     // i.e. resend request if don't receive ack within TIME_OUT
@@ -47,7 +47,7 @@ public class AmazonDaemon {
     private List<AInitWarehouse> warehouses;
 
     public AmazonDaemon() throws IOException {
-        ups = new MockUPS();
+//        ups = new MockUPS();
         this.seqNum = 0;
         // set up the TCP connection to the world(not connected yet)
         Socket socket = new Socket(WORLD_HOST, WORLD_PORT);
@@ -78,7 +78,7 @@ public class AmazonDaemon {
      */
     public void config() throws IOException {
         // TODO: debug info
-        ups.init();
+//        ups.init();
 
         System.out.println("Daemon is running...");
         System.out.println("Listening connection from UPS at 9999");
@@ -129,26 +129,26 @@ public class AmazonDaemon {
      */
     public void runAll() {
         // TODO: debug info, mock a new purchase request after 3s and another after 2s
-        new Thread(() -> {
-            try {
-                Thread.sleep(3000);
-                // WARNING!!! only two package while debugging(mock UPS only have two trucks)
-                List<String> packages = new ArrayList<>(Arrays.asList("36\n", "37\n"));
-                for (String p : packages){
-                    System.out.println("try to connect to daemon server");
-                    Socket socket = new Socket("localhost", 8888);
-                    PrintWriter out = new PrintWriter(socket.getOutputStream());
-                    out.write(p);
-                    out.flush();
-                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    System.out.println("receive confirm from amazon: " + in.readLine());
-                    socket.close();
-                    Thread.sleep(1000);
-                }
-            }catch (Exception e){
-                System.err.println(e.toString());
-            }
-        }).start();
+//        new Thread(() -> {
+//            try {
+//                Thread.sleep(3000);
+//                // WARNING!!! only two package while debugging(mock UPS only have two trucks)
+//                List<String> packages = new ArrayList<>(Arrays.asList("36\n", "37\n"));
+//                for (String p : packages){
+//                    System.out.println("try to connect to daemon server");
+//                    Socket socket = new Socket("localhost", 8888);
+//                    PrintWriter out = new PrintWriter(socket.getOutputStream());
+//                    out.write(p);
+//                    out.flush();
+//                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//                    System.out.println("receive confirm from amazon: " + in.readLine());
+//                    socket.close();
+//                    Thread.sleep(1000);
+//                }
+//            }catch (Exception e){
+//                System.err.println(e.toString());
+//            }
+//        }).start();
 
         // prepare all core threads
         threadPool.prestartAllCoreThreads();
@@ -285,7 +285,7 @@ public class AmazonDaemon {
         checkPackageID(packageID);
         Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
-            if (false){
+            if (true){
                 AUpick.Builder pick = AUpick.newBuilder();
                 pick.setPackage(p.getPack());
                 pick.setSeqnum(getSeqNum());
@@ -332,7 +332,7 @@ public class AmazonDaemon {
 	    System.out.println("delivering: " + packageID);
         p.setStatus(Package.DELIVERING);
         threadPool.execute(() -> {
-            if (false){
+            if (true){
                 AUdeliver.Builder deliver = AUdeliver.newBuilder();
                 deliver.setPackage(p.getPack());
                 deliver.setSeqnum(getSeqNum());
@@ -601,7 +601,7 @@ public class AmazonDaemon {
      */
     synchronized AResponses.Builder send(ACommands.Builder commands, long seqNum){
         // TODO: debug info
-        commands.setSimspeed(1000);
+        commands.setSimspeed(500);
         System.out.println("amazon sending(to world): " + commands.toString());
         // if not receive the ack within 10s, it will resend the message
         Timer timer = new Timer();

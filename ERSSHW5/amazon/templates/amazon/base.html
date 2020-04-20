@@ -53,11 +53,6 @@
                             </div>
                         </li>
                     {% endif %}
-                    <li>
-                        <a class="nav-item nav-link" href="{% url 'add_item' %}">
-                            <i class="fa fa-plus"></i>
-                        </a>
-                    </li>
                 </ul>
 
                 <!-- Navbar Right Side -->
@@ -68,15 +63,36 @@
                                 <i class="fa fa-shopping-cart"></i>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-item nav-link" href="{% url 'list-package' %}">Orders</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Action
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="{% url 'list-package' %}">Orders</a>
+                                <a class="dropdown-item" href="{% url 'profile' %}">Account</a>
+                                {% if user.profile.is_seller %}
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="{% url 'item_management' %}">My Selling</a>
+                                {% endif %}
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
+                            </div>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-item nav-link" href="{% url 'profile' %}">Account</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-item nav-link" href="{% url 'logout' %}">Logout</a>
-                        </li>
+{#                        {% if user.profile.is_seller %}#}
+{#                            <li class="nav-item">#}
+{#                                <a class="nav-item nav-link" href="{% url 'item_management' %}">My Selling</a>#}
+{#                            </li>#}
+{#                        {% endif %}#}
+{#                        <li class="nav-item">#}
+{#                            <a class="nav-item nav-link" href="{% url 'list-package' %}">Orders</a>#}
+{#                        </li>#}
+{#                        <li class="nav-item">#}
+{#                            <a class="nav-item nav-link" href="{% url 'profile' %}">Account</a>#}
+{#                        </li>#}
+{#                        <li class="nav-item">#}
+{#                            <a class="nav-item nav-link" href="{% url 'logout' %}">Logout</a>#}
+{#                        </li>#}
                     {% else %}
                         <li class="nav-item">
                             <a class="nav-item nav-link" href="{% url 'login' %}">Login</a>

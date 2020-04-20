@@ -23,14 +23,24 @@
                 <div class="col-lg-3 col-md-4 col-sm-6 col-xs-6">
                     <div class="listitem">
                         <a href="{% url 'item_detail' item.id %}">
-                            <img src="{{ item.img }}" class="img-thumbnail"> 
+                            <img src="{{ item.img }}" class="img-thumbnail" alt="thumbnail"> 
                             <div class="thumbnail">
                                 <div class="caption">
-                                      <h4>{{ item.description }}</h4>
-                                      <h5>$ {{ item.price|floatformat:2 }}</h5>   
+                                     <h4>{{ item.description }}</h4>
+                                </div>
+                                <div class="caption">
+                                    <h5>$ {{ item.price|floatformat:2 }}</h5>
                                 </div>
                             </div>
                         </a>
+                        <div class="caption">
+                            <h6>
+                                Sell by:
+                                <a href="#">
+                                    {{ item.seller.username }}
+                                </a>
+                            </h6> 
+                        </div>
                     </div>
                 </div>
             {% endfor %}

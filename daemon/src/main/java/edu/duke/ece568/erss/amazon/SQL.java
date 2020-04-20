@@ -32,7 +32,7 @@ public class SQL {
 
             Statement statement = conn.createStatement();
             ResultSet result = statement.executeQuery(String.format(
-                    "SELECT item.id, item.description, aOrder.cnt " +
+                    "SELECT item.id, item.description, aOrder.item_cnt " +
                             "FROM %s AS item, %s AS aOrder " +
                             "WHERE item.id=aOrder.item_id AND aOrder.package_id = %d;",
                     TABLE_ITEM, TABLE_ORDER, packageID)
@@ -42,7 +42,7 @@ public class SQL {
             purchase.setWhnum(queryWHNum(packageID));
             while (result.next()){
                 int itemID = result.getInt("id");
-                int cnt = result.getInt("cnt");
+                int cnt = result.getInt("item_cnt");
                 String des = result.getString("description");
                 purchase.addThings(AProduct.newBuilder().setId(itemID).setDescription(des).setCount(cnt));
             }

@@ -41,3 +41,5 @@ COPY --chown=juser ./ ./
 RUN ./gradlew  build
 # compile the code
 RUN ./gradlew  assemble
+
+RUN chmod 777 /daemon/deploy_daemon.sh
