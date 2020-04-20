@@ -30,10 +30,13 @@ Fancy Amazon!
 - [x] A **full-featured order page**.
     - search bar --- locate any order quickly
     - delete any history order
-- [x] Product category.
-    - several category of products, can switch between them in the home page
 - [x] Build-in data
     - use **signals** to make sure have some build-in data(e.g. initial items, defualt user), easy to deploy
+- [x] Warehouse dynamic alloccation.
+    - we have 10 build-in warehouses(as part of the initial data)
+    - we will allocate the nearest warehouse to each package(to facilate the delivery process)
+- [x] Product category.
+    - several category of products, can switch between them in the home page
 - [x] Edit user information
     - a separate page to allow user edit his/her personal infromation(e.g. name, email, password)
 - [ ] Associate your amazon account with your UPS account.
