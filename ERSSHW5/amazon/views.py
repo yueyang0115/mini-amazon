@@ -24,15 +24,29 @@ def home(request):
 
 # Home page, but with specific category
 def home_category(request, category):
-    context = {}
     category = Category.objects.get(category=category)
-    items = Item.objects.all().order_by("id").filter(category=category)
+    items = Item.objects.filter(category=category).order_by("id").all()
     if request.method == "POST":
         search = request.POST["search"]
         items = items.filter(description__icontains=search)
-    context["items"] = items
-    context["categories"] = Category.objects.all()
-    context["category"] = category
+    context = {
+        "items": items,
+        "categories": Category.objects.all(),
+        "category": category
+    }
+    return render(request, "amazon/home.html", context)
+
+
+def home_seller(request, seller_id):
+    seller = User.objects.get(pk=seller_id)
+    items = Item.objects.filter(seller=seller).order_by("id").all()
+    if request.method == "POST":
+        search = request.POST["search"]
+        items = items.filter(description__icontains=search)
+    context = {
+        "items": items,
+        "seller_name": seller.username
+    }
     return render(request, "amazon/home.html", context)
 
 
@@ -206,7 +220,7 @@ def add_update_item(request, item_id):
         except Category.DoesNotExist:
             c = Category(category=category)
             c.save()
-        if id == -1:
+        if item_id == "-1":
             p = request.FILES["thumbnail"]
             img_name = description.replace(" ", "_") + "_" + request.user.username + "." + p.name.split(".")[1]
             save_img(img_name, p)

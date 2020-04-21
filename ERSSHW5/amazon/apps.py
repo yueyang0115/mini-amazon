@@ -34,6 +34,7 @@ def default_category():
     from amazon.models import Category
     if Category.objects.all().count() == 0:
         Category.objects.create(category="fruit")
+        Category.objects.create(category="food")
         Category.objects.create(category="electronic")
 
 
@@ -46,6 +47,7 @@ def default_items():
         amazon = User.objects.get(username="mini_amazon")
         xkw = User.objects.get(username="xkw")
         fruit = Category.objects.get(category="fruit")
+        food = Category.objects.get(category="food")
         electronic = Category.objects.get(category="electronic")
         Item.objects.create(
             description="apple", price=1.99,
@@ -55,6 +57,11 @@ def default_items():
         Item.objects.create(
             description="orange", price=0.99,
             img="/static/img/orange.jpg", category=fruit,
+            seller=xkw
+        )
+        Item.objects.create(
+            description="Fried Chicken", price=5.99,
+            img="/static/img/fried_chicken.jpg", category=food,
             seller=xkw
         )
         Item.objects.create(

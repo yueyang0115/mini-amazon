@@ -7,6 +7,8 @@ urlpatterns = [
     path('', views.home, name="home"),
     # category in home page
     path('category/<category>', views.home_category, name="home_category"),
+
+    path('seller/<int:seller_id>', views.home_seller, name="home_seller"),
     # item detail page
     path('item/<int:item_id>', views.item_detail, name="item_detail"),
     # checkout page

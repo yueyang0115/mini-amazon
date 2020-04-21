@@ -10,6 +10,7 @@
     {% elif is_add_item %}
         <h1>{{ info }}</h1>
         <h2 class="mt-4"><a href="{% url "add_update_item" "-1" %}">Add more</a></h2>
+        <h2 class="mt-4"><a href="{% url "item_management" %}">Go to my selling page</a></h2>
     {% else %}
         <h1>Succeed!</h1>
     {% endif %}

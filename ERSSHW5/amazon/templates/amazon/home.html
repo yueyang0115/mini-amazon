@@ -1,6 +1,10 @@
 {% extends "amazon/base.html" %}
 {% block content %}
-    <h1>Welcome to mini amazon website</h1>
+    {% if seller_name %}
+        <h1>Welcome to {{ seller_name }}'s selling page.</h1>
+    {% else %}
+        <h1>Welcome to mini amazon website</h1>
+    {% endif %}
     <!-- search bar -->
     <form method="POST">
         {% csrf_token %}
@@ -36,7 +40,7 @@
                         <div class="caption">
                             <h6>
                                 Sell by:
-                                <a href="#">
+                                <a href="{% url "home_seller" item.seller.id %}">
                                     {{ item.seller.username }}
                                 </a>
                             </h6> 
