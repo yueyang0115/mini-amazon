@@ -2,6 +2,8 @@ package edu.duke.ece568.erss.amazon;
 import edu.duke.ece568.erss.amazon.proto.WorldAmazonProtocol.*;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SQL {
 
@@ -9,6 +11,7 @@ public class SQL {
     private static final String TABLE_ITEM = "amazon_item";
     private static final String TABLE_ORDER = "amazon_ORDER";
     private static final String TABLE_PACKAGE = "amazon_package";
+    private static final String TABLE_WAREHOUSE = "amazon_warehouse";
     // database configuration
     private static final String dbUrl = "jdbc:postgresql://localhost:5432/amazon";
     private static final String dbUser = "postgres";
@@ -131,11 +134,66 @@ public class SQL {
         return destination;
     }
 
+    public String queryUPSName(long packageID) {
+        try {
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+            conn.setAutoCommit(false);
+
+            Statement statement = conn.createStatement();
+            ResultSet result = statement.executeQuery(String.format(
+                    "SELECT ups_name FROM %s WHERE id = %d;",
+                    TABLE_PACKAGE, packageID)
+            );
+
+            String upsName = "";
+
+            if (result.next()){
+                upsName = result.getString("ups_name");
+            }
+
+            statement.close();
+            conn.close();
+            return upsName;
+        }catch (SQLException | ClassNotFoundException e){
+            System.err.println(e.toString());
+        }
+        return "";
+    }
+
+    public List<AInitWarehouse> queryWHs() {
+        try {
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+            conn.setAutoCommit(false);
+
+            Statement statement = conn.createStatement();
+            ResultSet result = statement.executeQuery(
+                    String.format("SELECT * FROM %s;", TABLE_WAREHOUSE)
+            );
+
+            List<AInitWarehouse> warehouses = new ArrayList<>();
+
+            while (result.next()){
+                int id = result.getInt("id");
+                int x = result.getInt("x");
+                int y = result.getInt("y");
+                warehouses.add(AInitWarehouse.newBuilder().setId(id).setX(x).setY(y).build());
+            }
+
+            statement.close();
+            conn.close();
+            return warehouses;
+        }catch (SQLException | ClassNotFoundException e){
+            System.err.println(e.toString());
+        }
+        return new ArrayList<>();
+    }
+
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
         SQL sql = new SQL();
-        System.out.println(sql.queryPackage(5));
-        System.out.println(sql.queryWHNum(5));
-        System.out.println(sql.queryPackageDest(5));
+        System.out.println(sql.queryWHs());;
+        System.out.println(sql.queryUPSName(2));
     }
 }
 

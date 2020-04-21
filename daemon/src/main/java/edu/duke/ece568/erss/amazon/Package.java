@@ -19,6 +19,7 @@ public class Package {
     private Destination destination;
     private String status;
     private APack pack;
+    private String upsName;
 
     public Package(long id, int whID, APack pack) {
         this.id = id;
@@ -28,6 +29,7 @@ public class Package {
         // we will only create the package object after purchase successful, so the initial state should be PROCESSED
         setStatus(PROCESSED);
         this.destination = new SQL().queryPackageDest(id);
+        this.upsName = new SQL().queryUPSName(id);
     }
 
     public long getId() {
@@ -72,6 +74,10 @@ public class Package {
 
     public APack getPack() {
         return pack;
+    }
+
+    public String getUpsName() {
+        return upsName;
     }
 
     /**

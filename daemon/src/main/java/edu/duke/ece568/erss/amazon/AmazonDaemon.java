@@ -33,8 +33,8 @@ public class AmazonDaemon {
 
     // NOTE!!! the world simulator use only one socket to communicate with us
     // i.e. the server expect to receive AConnect from each new connection
-    private final InputStream in;
-    private final OutputStream out;
+    private InputStream in;
+    private OutputStream out;
     // global sequence number
     private long seqNum;
     // server communicate with UPS
@@ -46,13 +46,9 @@ public class AmazonDaemon {
     private final ThreadPoolExecutor threadPool;
     private List<AInitWarehouse> warehouses;
 
-    public AmazonDaemon() throws IOException {
+    public AmazonDaemon() {
 //        ups = new MockUPS();
         this.seqNum = 0;
-        // set up the TCP connection to the world(not connected yet)
-        Socket socket = new Socket(WORLD_HOST, WORLD_PORT);
-        this.in = socket.getInputStream();
-        this.out = socket.getOutputStream();
         this.daemonThread = null;
         this.packageMap = new ConcurrentHashMap<>();
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(30);
@@ -64,10 +60,7 @@ public class AmazonDaemon {
      * Initial a lost of warehouses, if you want more warehouse at different location, change here.
      */
     public void initWareHouse(){
-        warehouses = new ArrayList<>();
-        // the id is the same as the index
-        warehouses.add(AInitWarehouse.newBuilder().setId(warehouses.size()).setX(2).setY(2).build());
-        warehouses.add(AInitWarehouse.newBuilder().setId(warehouses.size()).setX(3).setY(3).build());
+        warehouses = new SQL().queryWHs();
     }
 
     /**
@@ -105,7 +98,12 @@ public class AmazonDaemon {
      * @param worldID target world id
      * @return true if connect to the world successfully
      */
-    boolean connectToWorld(long worldID) {
+    boolean connectToWorld(long worldID) throws IOException {
+        // set up the TCP connection to the world
+        Socket socket = new Socket(WORLD_HOST, WORLD_PORT);
+        in = socket.getInputStream();
+        out = socket.getOutputStream();
+        // connect to the world
         AConnect.Builder connect =  AConnect.newBuilder();
         connect.setIsAmazon(true);
         connect.addAllInitwh(warehouses);
@@ -289,9 +287,15 @@ public class AmazonDaemon {
                 AUpick.Builder pick = AUpick.newBuilder();
                 pick.setPackage(p.getPack());
                 pick.setSeqnum(getSeqNum());
-                pick.setWh(warehouses.get(p.getWhID()));
+                // warehouse id start from 1
+                pick.setWh(warehouses.get(p.getWhID() - 1));
                 pick.setX(p.getDestX());
                 pick.setY(p.getDestY());
+                // set ups name
+                String name = p.getUpsName();
+                if (!name.isEmpty()){
+                    pick.setUpsUserName(name);
+                }
 
                 AUcommand.Builder command = AUcommand.newBuilder();
                 command.addPick(pick);
@@ -545,13 +549,6 @@ public class AmazonDaemon {
                     timer.cancel();
                     break;
                 }
-
-//                List<Long> acks = r.getAckList();
-//                acks.sort(Long::compareTo);
-//                if(acks.get(acks.size() - 1) == seqNum - 1){
-//                    timer.cancel();
-//                    break;
-//                }
                 r.clear();
             }
         }catch (Exception e){
