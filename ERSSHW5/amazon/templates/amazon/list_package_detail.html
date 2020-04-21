@@ -6,7 +6,7 @@
         <!--left: list order items-->
         <div class=" col-md-8 content-section table-responsive border-bottom table-hover">
             <br>
-            <h3>&nbsp;&nbsp;Order Status: {{pack.status|title}}</h3>
+            <h3>&nbsp;&nbsp;Order Status: {{ pack.status|title }}</h3>
             <br>
             {% if product_list %}
                 <table class="table ">
@@ -26,9 +26,9 @@
                             <td class="col-1 text-center">{{ forloop.counter }}</td>
                             <td class="col-3 text-center"><img class="img-thumbnail" style="width: 120px; height: 120px" src="{{ prod.item.img }}"></td>
                             <td class="col-1 text-left">{{ prod.item.description }}</td>
-                            <td class="col-2 text-center">{{prod.cnt}}</td>
-                            <td class="col-2 text-center">&dollar; {{prod.item.price }}</td>
-                            <td class="col-2 text-center">&dollar; {{prod.total}}</td>
+                            <td class="col-2 text-center">{{ prod.cnt }}</td>
+                            <td class="col-2 text-center">&dollar; {{ prod.item.price|floatformat:2 }}</td>
+                            <td class="col-2 text-center">&dollar; {{ prod.total|floatformat:2 }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -36,7 +36,7 @@
             {% endif %}
 
                     <div class="col-3 offset-8 text-right mt-4 mb-4">
-                        <b>Total(all items): </b><span style="color: #080000">&dollar;{{pack.total}}</span>
+                        <b>Total(all items): </b><span style="color: #080000">&dollar;{{ pack.total|floatformat:2 }}</span>
                     </div>
 
         </div>
@@ -48,16 +48,16 @@
                 <h3 class="offset-1">Order Info</h3>
                 <br>
                 <h5 class="offset-1">Ordered on</h5>
-                <p class="offset-1">{{pack.creation_time}}</p>
+                <p class="offset-1">{{ pack.creation_time }}</p>
                 <h5 class="offset-1">Shipping to</h5>
-                <p class="offset-1"> ({{pack.dest_x}}, {{pack.dest_y}})</p>
+                <p class="offset-1"> ({{ pack.dest_x }}, {{ pack.dest_y }})</p>
                 <h5 class="offset-1">Tracking Number</h5>
-                <p class="offset-1">{{pack.id}}</p>
+                <p class="offset-1">{{ pack.id }}</p>
                 <h5 class="offset-1">Total Price</h5>
-                <p class="offset-1">&dollar; {{pack.total}}</p>
+                <p class="offset-1">&dollar; {{ pack.total|floatformat:2 }}</p>
             </div>
             <div class = " offset-1 ">
-                <a href = "/listpackage" class = "btn btn-outline-info" >Back</a>
+                <a href = "{% url "list-package" %}" class = "btn btn-outline-info" >Back</a>
             </div>
         </div>
 

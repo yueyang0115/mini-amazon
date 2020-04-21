@@ -50,7 +50,7 @@
                                     {% endif %}
                                 {% endfor %}
                             </td>
-                            <td class="col-2 align-self-center border-top-0"> &dollar;{{ pack.total_fixed }}</td>
+                            <td class="col-2 align-self-center border-top-0"> &dollar;{{ pack.total_fixed|floatformat:2 }}</td>
                             <td class="col-2 align-self-center border-top-0">{{ pack.creation_time|date:"F d, Y" }}</td>
                             <td class="col-1 align-self-center border-top-0">{{ pack.status }}</td>
                             <td class="col-2 align-self-center border-top-0">{{ pack.id }}</td>
