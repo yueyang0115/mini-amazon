@@ -315,10 +315,9 @@ public class AmazonDaemon {
      */
     void toLoad(long packageID){
         checkPackageID(packageID);
-        Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
             System.out.println("loading: " + packageID);
-            load(p.getId());
+            load(packageID);
             System.out.println("loaded: " + packageID);
             // once finish loading, tell UPS to deliver
             toDelivery(packageID);
