@@ -10,6 +10,14 @@ services:
       restart: always
       volumes:
         - data-volume:/var/lib/postgresql/data
+  daemon:
+      build: ./daemon
+      command: bash -c "./gradlew run"
+      ports:
+        - "9999:9999" # port for UPS
+        - "8888:8888" # port for web
+      depends_on:
+        - db
   web-init:
       build: ./web-app
       command: /code/initserver.sh
