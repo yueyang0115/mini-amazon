@@ -41,7 +41,7 @@ public class DaemonThread extends Thread {
 
     /**
      * Front-end will only communicate with our daemon when it wants to purchase something.
-     * Other case(e.g. query status), it can simply query the data from database.
+     * Other case(e.g. toQuery status), it can simply toQuery the data from database.
      * @param socket new connection
      * @throws IOException probably because of stream error
      */

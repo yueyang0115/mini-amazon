@@ -22,7 +22,7 @@ public class SQL {
     }
 
     /**
-     * This function will query the package info from database and construct a APurchaseMore object by this info.
+     * This function will toQuery the package info from database and construct a APurchaseMore object by this info.
      * NOTE: this APurchase doesn't contain the sequence number, so the return is a builder(which you can edit)
      * @param packageID newly create package ID
      * @return APurchaseMore.Builder

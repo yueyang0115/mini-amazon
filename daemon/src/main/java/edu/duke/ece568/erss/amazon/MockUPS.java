@@ -9,6 +9,8 @@ import java.util.List;
 
 import edu.duke.ece568.erss.amazon.proto.AmazonUPSProtocol;
 import edu.duke.ece568.erss.amazon.proto.WorldUPSProtocol.*;
+
+import static edu.duke.ece568.erss.amazon.AmazonDaemon.UPS_SERVER_PORT;
 import static edu.duke.ece568.erss.amazon.Utils.recvMsgFrom;
 import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
 
@@ -27,7 +29,7 @@ public class MockUPS {
     private long seqNum;
 
     public MockUPS() throws IOException {
-        this.worldID = -1;
+        worldID = -1;
         seqNum = 0;
         truckID = 1;
         Socket socket = new Socket(HOST, PORT);
@@ -41,13 +43,13 @@ public class MockUPS {
             connectToWorld(-1);
             // 2. connect to amazon and tell it the result
             try {
-                Socket socket = new Socket("localhost", 9999);
+                Socket socket = new Socket("localhost", UPS_SERVER_PORT);
                 sendMsgTo(AmazonUPSProtocol.UAstart.newBuilder().setWorldid((int) worldID).setSeqnum(seqNum).build(), socket.getOutputStream());
                 AmazonUPSProtocol.Res.Builder builder = AmazonUPSProtocol.Res.newBuilder();
                 recvMsgFrom(builder, socket.getInputStream());
                 System.out.println("ups rec: " + builder.toString());
             }catch (Exception e){
-                System.err.println(e.toString());
+                System.err.println("ups init: " + e.toString());
             }
         }).start();
     }
@@ -122,7 +124,7 @@ public class MockUPS {
         sendAck(seqs);
 
         try{
-            Socket socket = new Socket("localhost", 9999);
+            Socket socket = new Socket("localhost", UPS_SERVER_PORT);
             AmazonUPSProtocol.UApicked.Builder picked = AmazonUPSProtocol.UApicked.newBuilder();
 
             picked.setSeqnum(seqNum);
@@ -141,7 +143,7 @@ public class MockUPS {
                 System.out.println("ups pick receive correct ack");
             }
         }catch (IOException e){
-            System.err.println(e.toString());
+            System.err.println("ups pick:" + e.toString());
         }
     }
 
@@ -174,7 +176,7 @@ public class MockUPS {
         sendAck(seqs);
 
         try{
-            Socket socket = new Socket("localhost", 9999);
+            Socket socket = new Socket("localhost", UPS_SERVER_PORT);
             AmazonUPSProtocol.UAdelivered.Builder delivered = AmazonUPSProtocol.UAdelivered.newBuilder();
 
             delivered.setSeqnum(seqNum);
@@ -192,7 +194,7 @@ public class MockUPS {
                 System.out.println("ups delivery receive correct ack");
             }
         }catch (IOException e){
-            System.err.println(e.toString());
+            System.err.println("ups delivery:" + e.toString());
         }
     }
 
@@ -208,7 +210,7 @@ public class MockUPS {
         System.out.println(responses.toString());
 
         if (responses.hasFinished()){
-            System.out.println("ups disconnect finish");
+            System.out.println("ups toDisconnect finish");
         }
 
     }

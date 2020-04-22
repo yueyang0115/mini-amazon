@@ -12,24 +12,29 @@ import static edu.duke.ece568.erss.amazon.Utils.recvMsgFrom;
 import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
 
 /**
- * 1. packageid is the same as shipid, and this is created when we send the APack
+ * 1. packageid is the same as shipid, and this is created when we sendToWorld the APack
  * 2. all communication with the world will be blocking, e.g. load() will return only after finish loading
- * 3. all communication with the UPS will be unblocking, e.g. toPick() will return once send successfully(receive ack)
+ * 3. all communication with the UPS will be unblocking, e.g. toPick() will return once sendToWorld successfully(receive ack)
  * 4. a full process will contain "purchase(world) ---> pack(world) & pick(UPS) ---> load(world) ---> deliver(UPS)"
  */
-// TODO: consider parse response in a separate function(sometimes a response of one package will contains information of the other)
 public class AmazonDaemon {
-    //private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
-    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+    private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
+//    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+//    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
     private static final int WORLD_PORT = 23456;
-    // the default timeout for each request
-    // i.e. resend request if don't receive ack within TIME_OUT
-    private static final int TIME_OUT = 10000;
+
     private static final String UPS_HOST = "vcm-14299.vm.duke.edu";
     private static final int UPS_PORT = 54321;
 
+    public static final int UPS_SERVER_PORT = 9999;
+
+    // the default timeout for each request
+    // i.e. resend request if don't receive ack within TIME_OUT
+    private static final int TIME_OUT = 10000;
+
     // TODO: debug info
     MockUPS ups;
+    boolean isMockingUPS;
 
     // NOTE!!! the world simulator use only one socket to communicate with us
     // i.e. the server expect to receive AConnect from each new connection
@@ -43,24 +48,23 @@ public class AmazonDaemon {
     private DaemonThread daemonThread;
     // a mpa of all unfinished package(key is the package id)
     private final Map<Long, Package> packageMap;
+    // mapping between sequence number and request(the timer handle the re-sendToWorld task)
+    private final Map<Long, Timer> requestMap;
     private final ThreadPoolExecutor threadPool;
-    private List<AInitWarehouse> warehouses;
+    private final List<AInitWarehouse> warehouses;
 
-    public AmazonDaemon() {
-//        ups = new MockUPS();
+
+    public AmazonDaemon() throws IOException {
+        ups = new MockUPS();
+        isMockingUPS = true;
+
         this.seqNum = 0;
         this.daemonThread = null;
         this.packageMap = new ConcurrentHashMap<>();
+        this.requestMap = new ConcurrentHashMap<>();
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(30);
         this.threadPool = new ThreadPoolExecutor(50, 80, 5, TimeUnit.SECONDS, workQueue);
-        initWareHouse();
-    }
-
-    /**
-     * Initial a lost of warehouses, if you want more warehouse at different location, change here.
-     */
-    public void initWareHouse() {
-        warehouses = new SQL().queryWHs();
+        this.warehouses = new SQL().queryWHs();
     }
 
     /**
@@ -70,13 +74,15 @@ public class AmazonDaemon {
      * thread is used to communicate with UPS and the world.
      */
     public void config() throws IOException {
-        // TODO: debug info
-//        ups.init();
+        if (isMockingUPS){
+            ups.init();
+        }
 
         System.out.println("Daemon is running...");
-        System.out.println("Listening connection from UPS at 9999");
+        System.out.println("Listening connection from UPS at " + UPS_SERVER_PORT);
         // the server listening the request comes from UPS
-        upsServer = new Server(9999);
+        upsServer = new Server(UPS_SERVER_PORT);
+        // we will keep trying until we successfully connect to the world
         while (true) {
             Socket s = upsServer.accept();
             if (s != null) {
@@ -85,7 +91,7 @@ public class AmazonDaemon {
                 // has a valid world id
                 if (builder.hasWorldid() && connectToWorld(builder.getWorldid())) {
                     System.out.println("Amazon connected to the world.");
-                    // send back ack
+                    // sendToWorld back ack
                     sendMsgTo(Res.newBuilder().addAck(builder.getSeqnum()).build(), s.getOutputStream());
                     break;
                 }
@@ -95,7 +101,6 @@ public class AmazonDaemon {
 
     /**
      * Connect to the world.
-     *
      * @param worldID target world id
      * @return true if connect to the world successfully
      */
@@ -124,7 +129,7 @@ public class AmazonDaemon {
     }
 
     /**
-     * Run both daemon thread and the UPS server.
+     * Run both daemon thread, receiving thread the the UPS server.
      */
     public void runAll() {
         // TODO: debug info, mock a new purchase request after 3s and another after 2s
@@ -151,9 +156,21 @@ public class AmazonDaemon {
 
         // prepare all core threads
         threadPool.prestartAllCoreThreads();
-        // run two separate server
+
+        // run two separate servers
         runDaemonServer();
         runUPSServer();
+
+        // open a new thread dedicate for receiving message from the world
+        Thread recvThread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()){
+                AResponses.Builder responses = AResponses.newBuilder();
+                // only this thread will access the "in" object, no need to synchronized
+                recvMsgFrom(responses, in);
+                handleWorldResponse(responses.build());
+            }
+        });
+        recvThread.start();
     }
 
     /**
@@ -161,7 +178,8 @@ public class AmazonDaemon {
      */
     void runDaemonServer() {
         daemonThread = new DaemonThread(packageID -> {
-            toBuy(packageID);
+            System.out.println(String.format("Receive new buying request, id: %d", packageID));
+            toPurchase(packageID);
         });
         daemonThread.start();
     }
@@ -175,8 +193,8 @@ public class AmazonDaemon {
             if (socket != null) {
                 threadPool.execute(() -> {
                     try {
-                        handleUPSRequest(socket.getInputStream(), socket.getOutputStream());
-                    } catch (IOException e) {
+                        handleUPSResponse(socket.getInputStream(), socket.getOutputStream());
+                    } catch (Exception e) {
                         System.err.println("runUPSServer: " + e.toString());
                     }
                 });
@@ -185,30 +203,74 @@ public class AmazonDaemon {
     }
 
     /**
-     * The truck has arrived at the warehouse, should load the package.
-     *
-     * @param packageID corresponding package
-     * @param truckID   corresponding truck
+     * This function will handle the response coming back from the world.
+     * Loop for every possible field in the response and update corresponding package.
+     * @param responses response
      */
-    void picked(long packageID, int truckID) {
-        checkPackageID(packageID);
-        Package pk = packageMap.get(packageID);
-        pk.setTruckID(truckID);
-        // check whether the package is packed
-        if (pk.getStatus().equals(Package.PACKED)) {
-            toLoad(packageID);
+    void handleWorldResponse(AResponses responses){
+        System.out.println("recv from world: " + responses.toString());
+        // sendToWorld back the ack
+        sendAck(responses);
+        // arrived package
+        for (APurchaseMore purchaseMore : responses.getArrivedList()){
+            purchased(purchaseMore);
+        }
+        // packed package ---> to load
+        for (APacked p : responses.getReadyList()){
+            packed(p.getShipid());
+        }
+        // loaded package ---> to delivery
+        for (ALoaded l : responses.getLoadedList()){
+            loaded(l.getShipid());
+        }
+        // error message
+        for (AErr err : responses.getErrorList()){
+            System.err.println(err.getErr());
+        }
+        // package status
+        for (APackage aPackage : responses.getPackagestatusList()){
+            System.out.println(aPackage.getStatus());
+            packageMap.get(aPackage.getPackageid()).setStatus(aPackage.getStatus());
+        }
+        // check all ack
+        for (long ack : responses.getAcksList()){
+            // sanity check(in case world sendToWorld some duplicate ack)
+            if (requestMap.containsKey(ack)){
+                requestMap.get(ack).cancel();
+                requestMap.remove(ack);
+            }
+        }
+        // disconnect from the world
+        if (responses.hasFinished()){
+            System.out.println("amazon disconnect finish");
         }
     }
 
     /**
-     * The package is delivered.
-     *
-     * @param packageID corresponding package
+     * Handle the response coming from UPS(e.g. picked & delivered)
+     * @param inputStream receive from UPS
+     * @param outputStream sendToWorld back to UPS
      */
-    void delivered(long packageID) {
-        checkPackageID(packageID);
-        packageMap.get(packageID).setStatus(Package.DELIVERED);
-        packageMap.remove(packageID);
+    void handleUPSResponse(InputStream inputStream, OutputStream outputStream) {
+        try {
+            UAcommand.Builder command = UAcommand.newBuilder();
+            recvMsgFrom(command, inputStream);
+            System.out.println("receive from ups:" + command);
+            // sendToWorld back ack once received
+            sendAck(command.build(), outputStream);
+            // check all trucks which arrive at the warehouse
+            for (UApicked p : command.getPickList()) {
+                // update package truck id and tell it to load
+                picked(p.getShipid(), p.getTruckid());
+            }
+            // check all packages which are delivered
+            for (UAdelivered d : command.getDeliverList()) {
+                // set the package delivered and remove it from the map(don't care anymore)
+                delivered(d.getShipid());
+            }
+        } catch (Exception e) {
+            System.err.println("runUPSServer: " + e.toString());
+        }
     }
 
     /**
@@ -224,28 +286,20 @@ public class AmazonDaemon {
     }
 
     /* ====== all functions start with to, e.g. toXXX() is asynchronous ====== */
-    void toBuy(long packageID) {
-        // use thread pool communicate with the world
+    /**
+     * Tell the world to purchase something to the corresponding warehouse.
+     * Function is asynchronous, will use thread-pool and return immediately.
+     * @param packageID corresponding package
+     */
+    void toPurchase(long packageID) {
+        printStatus("purchasing", packageID);
         threadPool.execute(() -> {
-            System.out.println(String.format("Receive new buying request, id: %d", packageID));
             // 1. retrieve the package info from DB
             long seq = getSeqNum();
             APurchaseMore.Builder newPackage = new SQL().queryPackage(packageID);
             newPackage.setSeqnum(seq);
-            // 2. tell the world to purchase more
-            AResponses.Builder res = send(ACommands.newBuilder().addBuy(newPackage), seq);
-            // 3. receive the purchase result
-            while (true) {
-                // sometimes, the successful data will come back with the ack, so we check first
-                if (res.getArrivedCount() > 0) {
-                    // purchase successful
-                    break;
-                }
-                // if only receive ack, keep waiting
-                res = receive();
-            }
-            System.out.println("Successful purchased: " + packageID);
-            // 4. create & store the package object
+
+            // 2. create & store the package object
             // this APack object is mainly for the convenient of following operation
             APack.Builder builder = APack.newBuilder();
             builder.setWhnum(newPackage.getWhnum());
@@ -253,47 +307,44 @@ public class AmazonDaemon {
             builder.setShipid(packageID);
             builder.setSeqnum(-1);
             Package p = new Package(packageID, newPackage.getWhnum(), builder.build());
-            p.setDestination(new SQL().queryPackageDest(packageID));
+            p.setStatus(Package.PROCESSING);
             // store this unfinished package to the map
             packageMap.put(packageID, p);
-            // pick(to UPS) and pack(to world) can happen in parallel
-            // i.e. use two different threads to send out the command
-            toPack(packageID);
-            toPick(packageID);
+
+            // 3. tell the world to purchase more
+            sendToWorld(ACommands.newBuilder().addBuy(newPackage), seq);
         });
     }
 
     /**
      * Tell the world to pack the package.
      * Function is asynchronous, will use thread-pool and return immediately.
-     *
      * @param packageID corresponding package
      */
     void toPack(long packageID) {
         checkPackageID(packageID);
-//        Package p = packageMap.get(packageID);
+        printStatus("packing", packageID);
+        Package p = packageMap.get(packageID);
+        p.setStatus(Package.PACKING);
         threadPool.execute(() -> {
-            System.out.println("packing: " + packageID);
-            pack(packageID);
-            System.out.println("packed: " + packageID);
-            // once finish packing, check whether the truck has already arrived
-            // if yes, go loading; if no, do nothing and return
-            if (packageMap.get(packageID).getTruckID() != -1) {
-                toLoad(packageID);
-            }
+            ACommands.Builder command = ACommands.newBuilder();
+            long seq = getSeqNum();
+            APack pack = packageMap.get(packageID).getPack();
+            command.addTopack(pack.toBuilder().setSeqnum(seq));
+            sendToWorld(command, seq);
         });
     }
 
     /**
      * Tell UPS go to a specific warehouse to pick up the package.
-     *
      * @param packageID corresponding package
      */
     void toPick(long packageID) {
         checkPackageID(packageID);
+        printStatus("picking", packageID);
         Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
-            if (true) {
+            if (isMockingUPS) {
                 AUpick.Builder pick = AUpick.newBuilder();
                 pick.setPackage(p.getPack());
                 pick.setSeqnum(getSeqNum());
@@ -306,7 +357,6 @@ public class AmazonDaemon {
                 if (!name.isEmpty()) {
                     pick.setUpsUserName(name);
                 }
-
                 AUcommand.Builder command = AUcommand.newBuilder();
                 command.addPick(pick);
 
@@ -321,17 +371,24 @@ public class AmazonDaemon {
     /**
      * Tell the world to load the package onto the truck.
      * NOTE: this function should only be called after the truck has arrived.
-     *
      * @param packageID corresponding package
      */
     void toLoad(long packageID) {
         checkPackageID(packageID);
+        printStatus("loading", packageID);
+        Package p = packageMap.get(packageID);
+        p.setStatus(Package.LOADING);
         threadPool.execute(() -> {
-            System.out.println("loading: " + packageID);
-            load(packageID);
-            System.out.println("loaded: " + packageID);
-            // once finish loading, tell UPS to deliver
-            toDelivery(packageID);
+            ACommands.Builder command = ACommands.newBuilder();
+            long seq = getSeqNum();
+            APutOnTruck.Builder load = APutOnTruck.newBuilder();
+            load.setWhnum(p.getWhID());
+            load.setTruckid(p.getTruckID());
+            load.setShipid(packageID);
+            load.setSeqnum(seq);
+            command.addLoad(load);
+
+            sendToWorld(command, seq);
         });
     }
 
@@ -343,11 +400,11 @@ public class AmazonDaemon {
      */
     void toDelivery(long packageID) {
         checkPackageID(packageID);
+        printStatus("delivering", packageID);
         Package p = packageMap.get(packageID);
-        System.out.println("delivering: " + packageID);
         p.setStatus(Package.DELIVERING);
         threadPool.execute(() -> {
-            if (true) {
+            if (isMockingUPS) {
                 AUdeliver.Builder deliver = AUdeliver.newBuilder();
                 deliver.setPackage(p.getPack());
                 deliver.setSeqnum(getSeqNum());
@@ -364,111 +421,127 @@ public class AmazonDaemon {
     }
 
     /**
-     * Pack the package, this function is blocking, so don't call it on the main thread.
-     *
-     * @param packageID corresponding package
-     */
-    public void pack(long packageID) {
-        checkPackageID(packageID);
-        Package p = packageMap.get(packageID);
-        p.setStatus(Package.PACKING);
-
-        ACommands.Builder command = ACommands.newBuilder();
-
-        long seq = getSeqNum();
-        APack pack = p.getPack();
-        command.addTopack(pack.toBuilder().setSeqnum(seq));
-
-        AResponses.Builder responses = send(command, seq);
-        System.out.println(String.format("package %d: %s", packageID, responses.toString()));
-
-        if (responses.getReadyCount() == 0) {
-            System.out.println(String.format("package %d: %s", packageID, "wait actual \"pack\" data"));
-            // only receive ack, need another receive to receive ready list
-            responses = receive();
-            System.out.println(String.format("package %d: %s", packageID, responses.toString()));
-        }
-
-        p.setStatus(Package.PACKED);
-    }
-
-    /**
-     * Load the packageID, this function is blocking, so don't call it on the main thread.
-     *
-     * @param packageID corresponding package
-     */
-    public void load(long packageID) {
-        checkPackageID(packageID);
-        Package p = packageMap.get(packageID);
-        p.setStatus(Package.LOADING);
-
-        ACommands.Builder command = ACommands.newBuilder();
-
-        long seq = getSeqNum();
-        APutOnTruck.Builder load = APutOnTruck.newBuilder();
-        load.setWhnum(p.getWhID());
-        load.setTruckid(p.getTruckID());
-        load.setShipid(packageID);
-        load.setSeqnum(seq);
-        command.addLoad(load);
-
-        AResponses.Builder responses = send(command, seq);
-        System.out.println(String.format("package %d: %s", packageID, responses.toString()));
-
-        if (responses.getLoadedCount() == 0) {
-            System.out.println(String.format("package %d: %s", packageID, "wait actual \"load\" data"));
-            responses = receive();
-            System.out.println(String.format("package %d: %s", packageID, responses.toString()));
-        }
-        p.setStatus(Package.LOADED);
-    }
-
-    /**
      * Query the status of a package, not so useful(we can keep track by ourselves)
-     *
      * @param packageID corresponding package
      */
-    public void query(int packageID) {
-        ACommands.Builder command = ACommands.newBuilder();
+    public void toQuery(int packageID) {
+        printStatus("querying", packageID);
+        threadPool.execute(() -> {
+            ACommands.Builder command = ACommands.newBuilder();
 
-        long seq = getSeqNum();
-        AQuery.Builder query = AQuery.newBuilder();
-        query.setPackageid(packageID);
-        query.setSeqnum(seq);
-        command.addQueries(query);
+            long seq = getSeqNum();
+            AQuery.Builder query = AQuery.newBuilder();
+            query.setPackageid(packageID);
+            query.setSeqnum(seq);
+            command.addQueries(query);
 
-        AResponses.Builder responses = send(command, seq);
-        System.out.println(String.format("package %d: %s", packageID, responses.toString()));
-
-        if (responses.getPackagestatusCount() == 0) {
-            responses = receive();
-            System.out.println(String.format("package %d: %s", packageID, responses.toString()));
-        }
+            sendToWorld(command, seq);
+        });
     }
 
     /**
      * Disconnect from the world.
      */
-    public void disconnect() {
+    public void toDisconnect() {
         ACommands.Builder command = ACommands.newBuilder();
         command.setDisconnect(true);
+        sendToWorld(command, 0);
+    }
 
-        AResponses.Builder res = send(command, 0);
-        System.out.println(res.toString());
+    /* ============ end ============ */
 
-        if (res.hasFinished()) {
-            System.out.println("amazon disconnect finish");
+    /* ============ all functions end with ed(e.g. purchased) is used to handle the result coming from world or UPS ============ */
+
+    /**
+     * The world has purchased corresponding package to the warehouse.
+     */
+    void purchased(APurchaseMore purchaseMore){
+        synchronized (packageMap){
+            // loop all package to find the corresponding package
+            for (Package p : packageMap.values()){
+                if (p.getWhID() != purchaseMore.getWhnum()){
+                    continue;
+                }
+                if (!p.getPack().getThingsList().equals(purchaseMore.getThingsList())){
+                    continue;
+                }
+                printStatus("purchased", p.getId());
+                // this is the corresponding package
+                // no worry, if two package has exactly the same warehouse and product list(item + count)
+                // it doesn't matter we process which first
+                p.setStatus(Package.PROCESSED);
+                // tell UPS to pick the package
+                toPick(p.getId());
+                // tell the world to pack the package
+                toPack(p.getId());
+                break;
+            }
         }
     }
 
     /**
+     * The world has packed our package.
+     * @param packageID id of the packed package
+     */
+    void packed(long packageID){
+        checkPackageID(packageID);
+        printStatus("packed", packageID);
+        Package p = packageMap.get(packageID);
+        p.setStatus(Package.PACKED);
+        // check whether the truck has already arrived the warehouse
+        if (p.getTruckID() != -1){
+            toLoad(packageID);
+        }
+    }
+
+    /**
+     * The truck has arrived at the warehouse, should load the package.
+     * @param packageID corresponding package
+     * @param truckID   corresponding truck
+     */
+    void picked(long packageID, int truckID) {
+        checkPackageID(packageID);
+        printStatus("picked", packageID);
+        Package p = packageMap.get(packageID);
+        p.setTruckID(truckID);
+        // check whether the package is packed
+        if (p.getStatus().equals(Package.PACKED)) {
+            toLoad(packageID);
+        }
+    }
+
+    /**
+     * The world has loaded our package to the truck.
+     * @param packageID id of the loaded package
+     */
+    void loaded(long packageID){
+        checkPackageID(packageID);
+        printStatus("loaded", packageID);
+        packageMap.get(packageID).setStatus(Package.LOADED);
+        toDelivery(packageID);
+    }
+
+    /**
+     * The package is delivered.
+     * @param packageID corresponding package
+     */
+    void delivered(long packageID) {
+        checkPackageID(packageID);
+        printStatus("delivered", packageID);
+        packageMap.get(packageID).setStatus(Package.DELIVERED);
+        // remove from the unfinished package map
+        packageMap.remove(packageID);
+    }
+
+    /* ============ end ============ */
+
+    /**
      * Send back the ack to UPS.
-     * This function will extract all seqnum in the UAcommand, and send back corresponding ack.
+     * This function will extract all seqnum in the UAcommand, and sendToWorld back corresponding ack.
      * message UAcommand{
      * repeated UApicked pick = 2;
      * repeated UAdelivered deliver = 3;
      * }
-     *
      * @param command      the incoming command you want to ack
      * @param outputStream output stream
      */
@@ -484,12 +557,12 @@ public class AmazonDaemon {
         for (long seq : seqs) {
             res.addAck(seq);
         }
-        System.out.println("send ack back(to UPS): " + res.toString());
+        System.out.println("sendToWorld ack back(to UPS): " + res.toString());
         sendMsgTo(res.build(), outputStream);
     }
 
     /**
-     * This function will extract all seqnum in the AResponse and send back corresponding ack.
+     * This function will extract all seqnum in the AResponse and sendToWorld back corresponding ack.
      * message AResponses {
      * repeated APurchaseMore arrived = 1;
      * repeated APacked ready = 2;
@@ -499,7 +572,6 @@ public class AmazonDaemon {
      * repeated int64 acks = 6;
      * repeated APackage packagestatus = 7;
      * }
-     *
      * @param responses the response you want to ack
      */
     void sendAck(AResponses responses) {
@@ -524,7 +596,7 @@ public class AmazonDaemon {
             for (long seq : seqs) {
                 commands.addAcks(seq);
             }
-            System.out.println("send ack back(to World): " + commands.toString());
+            System.out.println("sendToWorld ack back(to World): " + commands.toString());
             synchronized (out) {
                 sendMsgTo(commands.build(), out);
             }
@@ -532,8 +604,7 @@ public class AmazonDaemon {
     }
 
     /**
-     * This function will send the AUcommand to UPS and receive an ack.
-     *
+     * This function will sendToWorld the AUcommand to UPS and receive an ack.
      * @param command AUcommand
      */
     void sendToUPS(AUcommand command) {
@@ -558,7 +629,7 @@ public class AmazonDaemon {
                 // print out any error message
                 if (r.getErrCount() > 0) {
                     for (Err err : r.getErrList()) {
-                        System.out.println(err.toString());
+                        System.err.println(err.toString());
                     }
                 }
 
@@ -573,32 +644,8 @@ public class AmazonDaemon {
         }
     }
 
-    void handleUPSRequest(InputStream inputStream, OutputStream outputStream) {
-        try {
-            UAcommand.Builder command = UAcommand.newBuilder();
-            recvMsgFrom(command, inputStream);
-            System.out.println("receive from ups:" + command);
-            // send back ack, once receive
-            sendAck(command.build(), outputStream);
-            // check all trucks which arrive
-            for (UApicked p : command.getPickList()) {
-                System.out.println("actually picked: package " + p.getShipid());
-                // update package truck id and tell it to load
-                picked(p.getShipid(), p.getTruckid());
-            }
-            // check all packages which is delivered
-            for (UAdelivered d : command.getDeliverList()) {
-                System.out.println("actually delivered: package " + d.getShipid());
-                // set the package delivered and remove it from the map(don't care anymore)
-                delivered(d.getShipid());
-            }
-        } catch (Exception e) {
-            System.err.println("runUPSServer: " + e.toString());
-        }
-    }
-
     /**
-     * A wrapper of the actual send function, this function will re-send automatically if timeout.
+     * A wrapper of the actual sendToWorld function, this function will re-sendToWorld automatically if timeout.
      * This function used to communicate with the world.
      * message ACommands {
      * repeated APurchaseMore buy = 1;
@@ -606,59 +653,28 @@ public class AmazonDaemon {
      * repeated APutOnTruck load = 3;
      * repeated AQuery queries = 4;
      * optional uint32 simspeed = 5;
-     * optional bool disconnect = 6;
+     * optional bool toDisconnect = 6;
      * repeated int64 acks =7;
      * }
-     *
      * @param commands ACommand
      * @param seqNum   the sequence number of this command(used to check ack)
-     * @return AResponse object, in case the response contains something other than ack
      */
-    synchronized AResponses.Builder send(ACommands.Builder commands, long seqNum) {
+    void sendToWorld(ACommands.Builder commands, long seqNum) {
         // TODO: debug info
         commands.setSimspeed(500);
         System.out.println("amazon sending(to world): " + commands.toString());
-        // if not receive the ack within 10s, it will resend the message
+        // if not receive the ack within TIME_OUT, it will resend the message
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                sendMsgTo(commands.build(), out);
-            }
-        }, 0, TIME_OUT);
-        AResponses.Builder responses = AResponses.newBuilder();
-        while (true) {
-            // keep receiving message until receive expected ack
-            if (responses.getErrorCount() > 0) {
-                for (AErr err : responses.getErrorList()) {
-                    System.out.println(err.getErr());
+                synchronized (out){
+                    sendMsgTo(commands.build(), out);
                 }
             }
-            // TODO: maybe we should consider what if several ack arrive?
-            if (responses.getAcksCount() > 0 && responses.getAcksList().contains(seqNum)) {
-                System.out.println("recv ack from world");
-                System.out.println(responses.toString());
-                // only after received the ack, we will stop the timer
-                timer.cancel();
-                break;
-            } else {
-                responses = receive();
-            }
-        }
-        return responses;
-    }
+        }, 0, TIME_OUT);
 
-    /**
-     * This function is a wrapper of actual receive function, it will send back the ack automatically.
-     */
-    AResponses.Builder receive() {
-        AResponses.Builder responses = AResponses.newBuilder();
-        synchronized (in) {
-            recvMsgFrom(responses, in);
-        }
-        // send ack back
-        sendAck(responses.build());
-        return responses;
+        requestMap.put(seqNum, timer);
     }
 
     /**
@@ -673,6 +689,10 @@ public class AmazonDaemon {
         long tmp = seqNum;
         seqNum++;
         return tmp;
+    }
+
+    void printStatus(String status, long packageID){
+        System.out.println(String.format("%s package %d", status, packageID));
     }
 
     public static void main(String[] args) throws Exception {
