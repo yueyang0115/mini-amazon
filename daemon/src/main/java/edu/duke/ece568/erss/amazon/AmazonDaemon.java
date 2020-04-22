@@ -18,19 +18,22 @@ import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
  * 4. a full process will contain "purchase(world) ---> pack(world) & pick(UPS) ---> load(world) ---> deliver(UPS)"
  */
 public class AmazonDaemon {
-    private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
+    //private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
 //    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
-//    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+    private static final String WORLD_HOST = "vcm-14250.vm.duke.edu";
     private static final int WORLD_PORT = 23456;
 
-    private static final String UPS_HOST = "vcm-14299.vm.duke.edu";
-    private static final int UPS_PORT = 54321;
+    //private static final String UPS_HOST = "vcm-14299.vm.duke.edu";
+    //private static final int UPS_PORT = 54321;
+
+    private static final String UPS_HOST = "vcm-14250.vm.duke.edu";
+    private static final int UPS_PORT = 6666;
 
     public static final int UPS_SERVER_PORT = 9999;
 
     // the default timeout for each request
     // i.e. resend request if don't receive ack within TIME_OUT
-    private static final int TIME_OUT = 10000;
+    private static final int TIME_OUT = 3000;
 
     // TODO: debug info
     MockUPS ups;
@@ -55,8 +58,8 @@ public class AmazonDaemon {
 
 
     public AmazonDaemon() throws IOException {
-        ups = new MockUPS();
-        isMockingUPS = true;
+        //ups = new MockUPS();
+        isMockingUPS = false;
 
         this.seqNum = 0;
         this.daemonThread = null;
@@ -133,7 +136,7 @@ public class AmazonDaemon {
      */
     public void runAll() {
         // TODO: debug info, mock a new purchase request after 3s and another after 2s
-        new Thread(() -> {
+        /*new Thread(() -> {
             try {
                 Thread.sleep(3000);
                 // WARNING!!! only two package while debugging(mock UPS only have two trucks)
@@ -152,7 +155,7 @@ public class AmazonDaemon {
             }catch (Exception e){
                 System.err.println("debug thread: " + e.toString());
             }
-        }).start();
+	    }).start();*/
 
         // prepare all core threads
         threadPool.prestartAllCoreThreads();

@@ -117,7 +117,7 @@ def checkout(request, package_id):
         for order in package.orders.all():
             order.item_price = order.item.price
         # TODO: send the buy request to daemon
-        # purchase(package.id)
+        purchase(package.id)
         return render(request, "amazon/success.html", context)
     else:
         context["total"] = package.total()
