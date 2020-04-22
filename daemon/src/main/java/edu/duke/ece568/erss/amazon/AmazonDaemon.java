@@ -263,24 +263,20 @@ public class AmazonDaemon {
      * @param outputStream send back to UPS
      */
     void handleUPSResponse(InputStream inputStream, OutputStream outputStream) {
-        try {
-            UAcommand.Builder command = UAcommand.newBuilder();
-            recvMsgFrom(command, inputStream);
-            System.out.println("receive from ups:" + command);
-            // send back ack once received
-            sendAck(command.build(), outputStream);
-            // check all trucks which arrive at the warehouse
-            for (UApicked p : command.getPickList()) {
-                // update package truck id and tell it to load
-                picked(p.getShipid(), p.getTruckid());
-            }
-            // check all packages which are delivered
-            for (UAdelivered d : command.getDeliverList()) {
-                // set the package delivered and remove it from the map(don't care anymore)
-                delivered(d.getShipid());
-            }
-        } catch (Exception e) {
-            System.err.println("runUPSServer: " + e.toString());
+        UAcommand.Builder command = UAcommand.newBuilder();
+        recvMsgFrom(command, inputStream);
+        System.out.println("receive from ups:" + command);
+        // send back ack once received
+        sendAck(command.build(), outputStream);
+        // check all trucks which arrive at the warehouse
+        for (UApicked p : command.getPickList()) {
+            // update package truck id and tell it to load
+            picked(p.getShipid(), p.getTruckid());
+        }
+        // check all packages which are delivered
+        for (UAdelivered d : command.getDeliverList()) {
+            // set the package delivered and remove it from the map(don't care anymore)
+            delivered(d.getShipid());
         }
     }
 
@@ -290,10 +286,12 @@ public class AmazonDaemon {
      *
      * @param packageID ID to be checked
      */
-    void checkPackageID(long packageID) {
+    boolean checkPackageID(long packageID) {
         if (!packageMap.containsKey(packageID)) {
-            throw new IllegalArgumentException("invalid package id: " + packageID);
+            System.err.println("invalid package id: " + packageID);
+            return false;
         }
+        return true;
     }
 
     /* ====== all functions start with to, e.g. toXXX() is asynchronous ====== */
@@ -333,7 +331,9 @@ public class AmazonDaemon {
      * @param packageID corresponding package
      */
     void toPack(long packageID) {
-        checkPackageID(packageID);
+        if (!checkPackageID(packageID)){
+            return;
+        }
         printStatus("packing", packageID);
         Package p = packageMap.get(packageID);
         p.setStatus(Package.PACKING);
@@ -351,7 +351,9 @@ public class AmazonDaemon {
      * @param packageID corresponding package
      */
     void toPick(long packageID) {
-        checkPackageID(packageID);
+        if (!checkPackageID(packageID)){
+            return;
+        }
         printStatus("picking", packageID);
         Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
@@ -386,7 +388,9 @@ public class AmazonDaemon {
      * @param packageID corresponding package
      */
     void toLoad(long packageID) {
-        checkPackageID(packageID);
+        if (!checkPackageID(packageID)){
+            return;
+        }
         printStatus("loading", packageID);
         Package p = packageMap.get(packageID);
         p.setStatus(Package.LOADING);
@@ -411,7 +415,9 @@ public class AmazonDaemon {
      * @param packageID corresponding package
      */
     void toDelivery(long packageID) {
-        checkPackageID(packageID);
+        if (!checkPackageID(packageID)){
+            return;
+        }
         printStatus("delivering", packageID);
         Package p = packageMap.get(packageID);
         p.setStatus(Package.DELIVERING);
@@ -497,7 +503,9 @@ public class AmazonDaemon {
      * @param packageID id of the packed package
      */
     void packed(long packageID){
-        checkPackageID(packageID);
+        if (!checkPackageID(packageID)){
+            return;
+        }
         printStatus("packed", packageID);
         Package p = packageMap.get(packageID);
         p.setStatus(Package.PACKED);
@@ -513,7 +521,9 @@ public class AmazonDaemon {
      * @param truckID   corresponding truck
      */
     void picked(long packageID, int truckID) {
-        checkPackageID(packageID);
+        if (!checkPackageID(packageID)){
+            return;
+        }
         printStatus("picked", packageID);
         Package p = packageMap.get(packageID);
         p.setTruckID(truckID);
@@ -528,7 +538,9 @@ public class AmazonDaemon {
      * @param packageID id of the loaded package
      */
     void loaded(long packageID){
-        checkPackageID(packageID);
+        if (!checkPackageID(packageID)){
+            return;
+        }
         printStatus("loaded", packageID);
         packageMap.get(packageID).setStatus(Package.LOADED);
         toDelivery(packageID);
@@ -539,7 +551,9 @@ public class AmazonDaemon {
      * @param packageID corresponding package
      */
     void delivered(long packageID) {
-        checkPackageID(packageID);
+        if (!checkPackageID(packageID)){
+            return;
+        }
         printStatus("delivered", packageID);
         packageMap.get(packageID).setStatus(Package.DELIVERED);
         // remove from the unfinished package map
