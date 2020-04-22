@@ -26,7 +26,7 @@
                             <td class="col-1 text-center">{{ forloop.counter }}</td>
                             <td class="col-3 text-center"><img class="img-thumbnail" style="width: 120px; height: 120px" src="{{ prod.item.img }}"></td>
                             <td class="col-1 text-left">{{ prod.item.description }}</td>
-                            <td class="col-2 text-center">{{ prod.cnt }}</td>
+                            <td class="col-2 text-center">{{ prod.item_cnt }}</td>
                             <td class="col-2 text-center">&dollar; {{ prod.item.price|floatformat:2 }}</td>
                             <td class="col-2 text-center">&dollar; {{ prod.total|floatformat:2 }}</td>
                         </tr>
