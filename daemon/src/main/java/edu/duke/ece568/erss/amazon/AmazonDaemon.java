@@ -20,13 +20,17 @@ import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
 // TODO: consider parse response in a separate function(sometimes a response of one package will contains information of the other)
 public class AmazonDaemon {
     //private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
-    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+    //private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+    private static final String WORLD_HOST = "vcm-14250.vm.duke.edu";
     private static final int WORLD_PORT = 23456;
     // the default timeout for each request
     // i.e. resend request if don't receive ack within TIME_OUT
     private static final int TIME_OUT = 10000;
-    private static final String UPS_HOST = "vcm-14299.vm.duke.edu";
-    private static final int UPS_PORT = 54321;
+    //private static final String UPS_HOST = "vcm-14299.vm.duke.edu";
+    //private static final int UPS_PORT = 54321;
+    
+    private static final String UPS_HOST = "vcm-14250.vm.duke.edu";
+    private static final int UPS_PORT = 6666;
 
     // TODO: debug info
     MockUPS ups;
@@ -555,6 +559,7 @@ public class AmazonDaemon {
 
             while (true) {
                 recvMsgFrom(r, inputStream);
+		System.out.println(r.toString());
                 // print out any error message
                 if (r.getErrCount() > 0) {
                     for (Err err : r.getErrList()) {
