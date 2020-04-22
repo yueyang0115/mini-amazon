@@ -1,17 +1,39 @@
-version: "2"
+version: '2'
+
 services:
-  mydb:
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: abc123
-      POSTGRES_USER: postgres
-      POSTGRES_DB: worldSim
-    restart: always
-  server:
-    build: ./worldSim/docker_deploy
-    command: bash -c "./wait-for-it.sh mydb:5432 --strict -- ./server 12345 23456 0"
-    ports:
-      - "12345:12345"
-      - "23456:23456"
-    depends_on:
-      - mydb
+  db:
+      image: postgres
+      environment:
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_USER: postgres
+        POSTGRES_DB: amazon
+      restart: always
+      volumes:
+        - data-volume:/var/lib/postgresql/data
+  web-init:
+      build: ./web-app
+      command: /code/initserver.sh
+      volumes:
+        - ./web-app:/code
+      depends_on:
+        - db
+  web:
+      build: ./web-app
+      user: nobody
+      command: /code/runserver.sh
+      volumes:
+        - ./web-app:/code
+      expose:
+        - "8000"
+      depends_on:
+        - web-init
+  nginx:
+     image: nginx:latest
+     ports:
+       - "8000:8000"
+     volumes:
+       - ./nginx/config:/etc/nginx/conf.d
+     depends_on:
+       - web
+volumes:
+   data-volume: 
