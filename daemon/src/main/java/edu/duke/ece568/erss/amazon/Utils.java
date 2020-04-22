@@ -11,7 +11,6 @@ public class Utils {
     /**
      * This function will "sendToWorld" the data(should follow Google Protocol Buffer) to corresponding output stream.
      * You should handle the timeout by yourself.
-     *
      * @param msg the message to be sendToWorld
      * @param out output stream
      * @param <T> generic type of the data
@@ -35,7 +34,6 @@ public class Utils {
     /**
      * This function will only "read" the data from corresponding input stream.
      * You should handle the sendToWorld back ask by yourself.
-     *
      * @param response response(by reference)
      * @param in       input stream
      * @param <T>      generic type of the response

@@ -12,9 +12,9 @@ import static edu.duke.ece568.erss.amazon.Utils.recvMsgFrom;
 import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
 
 /**
- * 1. packageid is the same as shipid, and this is created when we sendToWorld the APack
+ * 1. packageid is the same as shipid, and this is created when we send the APack
  * 2. all communication with the world will be blocking, e.g. load() will return only after finish loading
- * 3. all communication with the UPS will be unblocking, e.g. toPick() will return once sendToWorld successfully(receive ack)
+ * 3. all communication with the UPS will be unblocking, e.g. toPick() will return once send successfully(receive ack)
  * 4. a full process will contain "purchase(world) ---> pack(world) & pick(UPS) ---> load(world) ---> deliver(UPS)"
  */
 public class AmazonDaemon {
@@ -48,7 +48,7 @@ public class AmazonDaemon {
     private DaemonThread daemonThread;
     // a mpa of all unfinished package(key is the package id)
     private final Map<Long, Package> packageMap;
-    // mapping between sequence number and request(the timer handle the re-sendToWorld task)
+    // mapping between sequence number and request(the timer handle the re-send task)
     private final Map<Long, Timer> requestMap;
     private final ThreadPoolExecutor threadPool;
     private final List<AInitWarehouse> warehouses;
@@ -91,7 +91,7 @@ public class AmazonDaemon {
                 // has a valid world id
                 if (builder.hasWorldid() && connectToWorld(builder.getWorldid())) {
                     System.out.println("Amazon connected to the world.");
-                    // sendToWorld back ack
+                    // send back ack
                     sendMsgTo(Res.newBuilder().addAck(builder.getSeqnum()).build(), s.getOutputStream());
                     break;
                 }
@@ -133,26 +133,26 @@ public class AmazonDaemon {
      */
     public void runAll() {
         // TODO: debug info, mock a new purchase request after 3s and another after 2s
-//        new Thread(() -> {
-//            try {
-//                Thread.sleep(3000);
-//                // WARNING!!! only two package while debugging(mock UPS only have two trucks)
-//                List<String> packages = new ArrayList<>(Arrays.asList("36\n", "37\n"));
-//                for (String p : packages){
-//                    System.out.println("try to connect to daemon server");
-//                    Socket socket = new Socket("localhost", 8888);
-//                    PrintWriter out = new PrintWriter(socket.getOutputStream());
-//                    out.write(p);
-//                    out.flush();
-//                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-//                    System.out.println("receive confirm from amazon: " + in.readLine());
-//                    socket.close();
-//                    Thread.sleep(1000);
-//                }
-//            }catch (Exception e){
-//                System.err.println(e.toString());
-//            }
-//        }).start();
+        new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+                // WARNING!!! only two package while debugging(mock UPS only have two trucks)
+                List<String> packages = new ArrayList<>(Arrays.asList("4\n", "5\n"));
+                for (String p : packages){
+                    System.out.println("try to connect to daemon server");
+                    Socket socket = new Socket("localhost", 8888);
+                    PrintWriter out = new PrintWriter(socket.getOutputStream());
+                    out.write(p);
+                    out.flush();
+                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    System.out.println("receive confirm from amazon: " + in.readLine());
+                    socket.close();
+                    Thread.sleep(1000);
+                }
+            }catch (Exception e){
+                System.err.println("debug thread: " + e.toString());
+            }
+        }).start();
 
         // prepare all core threads
         threadPool.prestartAllCoreThreads();
@@ -188,18 +188,21 @@ public class AmazonDaemon {
      * This function will keep waiting for new connections from UPS side.
      */
     void runUPSServer() {
-        while (!Thread.currentThread().isInterrupted()) {
-            Socket socket = upsServer.accept();
-            if (socket != null) {
-                threadPool.execute(() -> {
-                    try {
-                        handleUPSResponse(socket.getInputStream(), socket.getOutputStream());
-                    } catch (Exception e) {
-                        System.err.println("runUPSServer: " + e.toString());
-                    }
-                });
+        Thread upsThread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                Socket socket = upsServer.accept();
+                if (socket != null) {
+                    threadPool.execute(() -> {
+                        try {
+                            handleUPSResponse(socket.getInputStream(), socket.getOutputStream());
+                        } catch (Exception e) {
+                            System.err.println("runUPSServer: " + e.toString());
+                        }
+                    });
+                }
             }
-        }
+        });
+        upsThread.start();
     }
 
     /**
@@ -209,7 +212,7 @@ public class AmazonDaemon {
      */
     void handleWorldResponse(AResponses responses){
         System.out.println("recv from world: " + responses.toString());
-        // sendToWorld back the ack
+        // send back the ack
         sendAck(responses);
         // arrived package
         for (APurchaseMore purchaseMore : responses.getArrivedList()){
@@ -234,7 +237,7 @@ public class AmazonDaemon {
         }
         // check all ack
         for (long ack : responses.getAcksList()){
-            // sanity check(in case world sendToWorld some duplicate ack)
+            // sanity check(in case world send some duplicate ack)
             if (requestMap.containsKey(ack)){
                 requestMap.get(ack).cancel();
                 requestMap.remove(ack);
@@ -249,14 +252,14 @@ public class AmazonDaemon {
     /**
      * Handle the response coming from UPS(e.g. picked & delivered)
      * @param inputStream receive from UPS
-     * @param outputStream sendToWorld back to UPS
+     * @param outputStream send back to UPS
      */
     void handleUPSResponse(InputStream inputStream, OutputStream outputStream) {
         try {
             UAcommand.Builder command = UAcommand.newBuilder();
             recvMsgFrom(command, inputStream);
             System.out.println("receive from ups:" + command);
-            // sendToWorld back ack once received
+            // send back ack once received
             sendAck(command.build(), outputStream);
             // check all trucks which arrive at the warehouse
             for (UApicked p : command.getPickList()) {
@@ -345,6 +348,9 @@ public class AmazonDaemon {
         Package p = packageMap.get(packageID);
         threadPool.execute(() -> {
             if (isMockingUPS) {
+                // TODO: debug info
+                ups.pick(p.getWhID(), packageID);
+            } else {
                 AUpick.Builder pick = AUpick.newBuilder();
                 pick.setPackage(p.getPack());
                 pick.setSeqnum(getSeqNum());
@@ -361,9 +367,6 @@ public class AmazonDaemon {
                 command.addPick(pick);
 
                 sendToUPS(command.build());
-            } else {
-                // TODO: debug info
-                ups.pick(p.getWhID(), packageID);
             }
         });
     }
@@ -405,6 +408,9 @@ public class AmazonDaemon {
         p.setStatus(Package.DELIVERING);
         threadPool.execute(() -> {
             if (isMockingUPS) {
+                // TODO: debug info
+                ups.delivery(p.getDestX(), p.getDestY(), packageID);
+            } else {
                 AUdeliver.Builder deliver = AUdeliver.newBuilder();
                 deliver.setPackage(p.getPack());
                 deliver.setSeqnum(getSeqNum());
@@ -413,9 +419,6 @@ public class AmazonDaemon {
                 command.addDeliver(deliver);
 
                 sendToUPS(command.build());
-            } else {
-                // TODO: debug info
-                ups.delivery(p.getDestX(), p.getDestY(), packageID);
             }
         });
     }
@@ -537,7 +540,7 @@ public class AmazonDaemon {
 
     /**
      * Send back the ack to UPS.
-     * This function will extract all seqnum in the UAcommand, and sendToWorld back corresponding ack.
+     * This function will extract all seqnum in the UAcommand, and send back corresponding ack.
      * message UAcommand{
      * repeated UApicked pick = 2;
      * repeated UAdelivered deliver = 3;
@@ -557,12 +560,12 @@ public class AmazonDaemon {
         for (long seq : seqs) {
             res.addAck(seq);
         }
-        System.out.println("sendToWorld ack back(to UPS): " + res.toString());
+        System.out.println("send ack back(to UPS): " + res.toString());
         sendMsgTo(res.build(), outputStream);
     }
 
     /**
-     * This function will extract all seqnum in the AResponse and sendToWorld back corresponding ack.
+     * This function will extract all seqnum in the AResponse and send back corresponding ack.
      * message AResponses {
      * repeated APurchaseMore arrived = 1;
      * repeated APacked ready = 2;
@@ -596,7 +599,7 @@ public class AmazonDaemon {
             for (long seq : seqs) {
                 commands.addAcks(seq);
             }
-            System.out.println("sendToWorld ack back(to World): " + commands.toString());
+            System.out.println("send ack back(to World): " + commands.toString());
             synchronized (out) {
                 sendMsgTo(commands.build(), out);
             }
@@ -604,7 +607,7 @@ public class AmazonDaemon {
     }
 
     /**
-     * This function will sendToWorld the AUcommand to UPS and receive an ack.
+     * This function will send the AUcommand to UPS and receive an ack.
      * @param command AUcommand
      */
     void sendToUPS(AUcommand command) {
@@ -645,7 +648,7 @@ public class AmazonDaemon {
     }
 
     /**
-     * A wrapper of the actual sendToWorld function, this function will re-sendToWorld automatically if timeout.
+     * A wrapper of the actual send function, this function will re-send automatically if timeout.
      * This function used to communicate with the world.
      * message ACommands {
      * repeated APurchaseMore buy = 1;
@@ -692,7 +695,7 @@ public class AmazonDaemon {
     }
 
     void printStatus(String status, long packageID){
-        System.out.println(String.format("%s package %d", status, packageID));
+        System.out.println(String.format("** %s package %d **", status, packageID));
     }
 
     public static void main(String[] args) throws Exception {
