@@ -116,6 +116,7 @@ def checkout(request, package_id):
         # once user checkout, the price will be final price
         for order in package.orders.all():
             order.item_price = order.item.price
+            order.save()
         # TODO: send the buy request to daemon
         purchase(package.id)
         send_email([request.user.email], "Your order has been placed.")
@@ -163,7 +164,7 @@ def shop_cart(request):
 
 @login_required
 def list_package(request):
-    package_list = Package.objects.filter(owner=request.user).order_by('creation_time')
+    package_list = Package.objects.filter(owner=request.user).order_by('creation_time').all()
     item_dict = {}
 
     if request.method == "POST":
