@@ -168,7 +168,12 @@ def list_package(request):
 
     if request.method == "POST":
         search = request.POST["search"]
-        package_list = Package.objects.filter(owner=request.user, id=search)
+        search_list = []
+        for pack in package_list:
+            orders = Order.objects.filter(package__id=pack.id, item__description__icontains=search)
+            if orders:
+                search_list.append(pack)
+        package_list = search_list
 
     for pack in package_list:
         orders = Order.objects.filter(package__id=pack.id)
