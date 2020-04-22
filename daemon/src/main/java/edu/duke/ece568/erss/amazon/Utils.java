@@ -11,7 +11,6 @@ public class Utils {
     /**
      * This function will "send" the data(should follow Google Protocol Buffer) to corresponding output stream.
      * You should handle the timeout by yourself.
-     *
      * @param msg the message to be send
      * @param out output stream
      * @param <T> generic type of the data
@@ -27,15 +26,14 @@ public class Utils {
             codedOutputStream.flush();
             return true;
         } catch (IOException e) {
-            System.err.println("send: " + e.toString());
+            System.err.println("sendToWorld: " + e.toString());
             return false;
         }
     }
 
     /**
      * This function will only "read" the data from corresponding input stream.
-     * You should handle the send back ask by yourself.
-     *
+     * You should handle the sendToWorld back ask by yourself.
      * @param response response(by reference)
      * @param in       input stream
      * @param <T>      generic type of the response

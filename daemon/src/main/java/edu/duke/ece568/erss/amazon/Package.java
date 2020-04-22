@@ -26,8 +26,6 @@ public class Package {
         this.whID = whID;
         this.pack = pack;
         this.truckID = -1;
-        // we will only create the package object after purchase successful, so the initial state should be PROCESSED
-        setStatus(PROCESSED);
         this.destination = new SQL().queryPackageDest(id);
         this.upsName = new SQL().queryUPSName(id);
     }
