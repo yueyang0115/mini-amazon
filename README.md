@@ -21,21 +21,26 @@ Fancy Amazon!
     - **sort** the orders via different constraints
 - [x] A **full-featured product management system** + seller.
     - any authenticated user can register as a seller(or unregister)
+    - seller will has his/her own selling page, displaying all products they are selling
     - sellers will have a product management system which he/she can 
         - publish new products
         - edit their selling products(e.g. name, price, category)
         - delete(or on sell) their selling products
 - [x] Search bar in home page.
-    - search products from all category
-    - search products in one specic category
+    - search products from all categories
+    - search products in one specific category
+    - search products for one specific seller
 - [x] A **full-featured order page**.
     - search bar --- locate any order quickly
     - delete any history order
+    - view detail of any order
 - [x] Build-in data
-    - use **signals** to make sure have some build-in data(e.g. initial items, defualt user), easy to deploy
+    - use **signals** to make sure we have some build-in data(e.g. initial items, defualt user), easy to deploy
 - [x] Warehouse **dynamic alloccation**.
     - we have 10 build-in warehouses(as part of the initial data)
     - we will allocate the nearest warehouse to each package(to facilate the delivery process)
+- [x] Email notification.
+    - we will send a confirmation email to user once purchased successful
 - [x] Product category.
     - several category of products, can switch between them in the home page
 - [x] Edit user profile

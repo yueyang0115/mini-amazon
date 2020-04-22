@@ -26,8 +26,8 @@
                     <tr class="row text-center">
                         <!-- thumbnail -->
                         <th class="col-1">#</th>
-                        <th class="col-4 text-left">Items</th>
-                        <th class="col-2">Total price</th>
+                        <th class="col-5 ">Items</th>
+                        <th class="col-1">Price</th>
                         <th class="col-2">Creation Time</th>
                         <th class="col-1">Status</th>
                         <th class="col-2">Tracking Number</th>
@@ -37,20 +37,20 @@
                     {% for pack in package_list %}
                         <tr class="row text-center">
                             <td class="col-1 align-self-center border-top-0">{{ forloop.counter }}</td>
-                            <td class="col-4 align-self-center border-top-0 text-left">
+                            <td class="col-5 align-self-center border-top-0 text-left">
                                 {% for key, value in item_dict.items %}
                                     {% if key is pack.id %}
                                         {% for order in value %}
                                             {% if forloop.counter < 4 %}
                                                 <img class="img-thumbnail" style="width: 50px; height: 50px"
                                                      src="{{ order.item.img }}">
-                                                {{ order.item.description }}
+                                                <span style="font-size:14.5px;">{{ order.item.description }}</span>
                                             {% endif %}
                                         {% endfor %}
                                     {% endif %}
                                 {% endfor %}
                             </td>
-                            <td class="col-2 align-self-center border-top-0"> &dollar;{{ pack.total_fixed|floatformat:2 }}</td>
+                            <td class="col-1 align-self-center border-top-0"> &dollar;{{ pack.total_fixed|floatformat:2 }}</td>
                             <td class="col-2 align-self-center border-top-0">{{ pack.creation_time|date:"F d, Y" }}</td>
                             <td class="col-1 align-self-center border-top-0">{{ pack.status }}</td>
                             <td class="col-2 align-self-center border-top-0">{{ pack.id }}</td>
