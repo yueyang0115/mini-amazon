@@ -66,4 +66,4 @@ def purchase(package_id):
 
 
 if __name__ == '__main__':
-    print(math.sqrt(math.pow(1, 2) + math.pow(1, 2)))
+    send_email(["xiakewei96@gmail.com"], "hello")
