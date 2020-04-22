@@ -26,7 +26,7 @@
                     <tr class="row text-center">
                         <!-- thumbnail -->
                         <th class="col-1">#</th>
-                        <th class="col-5 text-left">Items</th>
+                        <th class="col-5 ">Items</th>
                         <th class="col-1">Price</th>
                         <th class="col-2">Creation Time</th>
                         <th class="col-1">Status</th>
@@ -44,7 +44,7 @@
                                             {% if forloop.counter < 4 %}
                                                 <img class="img-thumbnail" style="width: 50px; height: 50px"
                                                      src="{{ order.item.img }}">
-                                                {{ order.item.description }}
+                                                <span style="font-size:14.5px;">{{ order.item.description }}</span>
                                             {% endif %}
                                         {% endfor %}
                                     {% endif %}
