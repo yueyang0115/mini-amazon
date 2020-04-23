@@ -19,14 +19,15 @@
                 </div>
             </form>
             <br>
+
             <!--order-list-->
-            <div class="table-responsive mt-4 border-bottom table-hover">
+            <div class="table-responsive mt-4 table-hover">
                 <table class="table">
                     <thead>
                     <tr class="row text-center">
                         <!-- thumbnail -->
                         <th class="col-1">#</th>
-                        <th class="col-5 ">Items</th>
+                        <th class="col-5">Items</th>
                         <th class="col-1">Price</th>
                         <th class="col-2">Creation Time</th>
                         <th class="col-1">Status</th>
@@ -50,17 +51,18 @@
                                     {% endif %}
                                 {% endfor %}
                             </td>
-                            <td class="col-1 align-self-center border-top-0"> &dollar;{{ pack.total_fixed|floatformat:2 }}</td>
+                            <td class="col-1 align-self-center border-top-0">
+                                &dollar;{{ pack.total_fixed|floatformat:2 }}</td>
                             <td class="col-2 align-self-center border-top-0">{{ pack.creation_time|date:"F d, Y" }}</td>
                             <td class="col-1 align-self-center border-top-0">{{ pack.status }}</td>
                             <td class="col-2 align-self-center border-top-0">{{ pack.id }}</td>
                         </tr>
                         <tr class="row border-bottom">
-                            <td class="col-md-10 border-top-0"></td>
-                            <td class="border-top-0 col-md-1">
+                            <td class="col-10 border-top-0"></td>
+                            <td class="col-1 border-top-0">
                                 <a href="/listpackage/{{ pack.id }}/" class="btn btn-outline-info">Detail</a>
                             </td>
-                            <td class="border-top-0 col-md-1">
+                            <td class="col-1 border-top-0">
                                 <a href="{% url 'delete-package' pack.id %}"
                                    class="btn btn-outline-secondary">Delete</a>
                             </td>

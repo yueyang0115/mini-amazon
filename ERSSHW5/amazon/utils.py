@@ -4,6 +4,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from PIL import Image
 from amazon.models import WareHouse
+from concurrent.futures import ThreadPoolExecutor
 import math
 
 # email address info
@@ -12,6 +13,11 @@ USER_ACCOUNT = {
     'username': 'ece568noreply@gmail.com',
     'password': 'ece568code'
 }
+pool = ThreadPoolExecutor(10)
+
+
+def send_email_async(receivers, text):
+    pool.submit(send_email, receivers, text)
 
 
 def send_email(receivers, text):
@@ -66,4 +72,4 @@ def purchase(package_id):
 
 
 if __name__ == '__main__':
-    send_email(["xiakewei96@gmail.com"], "hello")
+    send_email_async(["xiakewei96@gmail.com"], "hello")

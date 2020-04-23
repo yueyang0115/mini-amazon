@@ -89,6 +89,13 @@ class Package(models.Model):
             total += order.total_fixed()
         return total
 
+    def info_str(self):
+        info = "Your order has successfully been placed.\nDetail info:\n"
+        for order in self.orders.all():
+            info += "* %d %s(total $ %.2f)\n" % (order.item_cnt, order.item.description, order.total_fixed())
+        info += "total: $%.2f" % (self.total_fixed())
+        return info
+
     def __str__(self):
         return "<" + str(self.warehouse) + ", " + self.status + ">"
 
