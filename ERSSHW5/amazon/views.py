@@ -228,7 +228,7 @@ def add_update_item(request, item_id):
         except Category.DoesNotExist:
             c = Category(category=category)
             c.save()
-        if item == "-1":
+        if int(item) == -1:
             p = request.FILES["thumbnail"]
             img_name = description.replace(" ", "_") + "_" + request.user.username + "." + p.name.split(".")[1]
             save_img(img_name, p)
