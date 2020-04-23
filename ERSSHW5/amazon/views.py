@@ -217,6 +217,7 @@ def add_update_item(request, item_id):
     if not request.user.profile.is_seller:
         raise Http404("Your are not a seller")
     if request.method == "POST":
+        # if the method is POST, we should use the id in POST data rather than URL
         item = request.POST["item_id"]
         description = request.POST["description"]
         price = float(request.POST["price"])
@@ -227,7 +228,7 @@ def add_update_item(request, item_id):
         except Category.DoesNotExist:
             c = Category(category=category)
             c.save()
-        if item_id == "-1":
+        if item == "-1":
             p = request.FILES["thumbnail"]
             img_name = description.replace(" ", "_") + "_" + request.user.username + "." + p.name.split(".")[1]
             save_img(img_name, p)
