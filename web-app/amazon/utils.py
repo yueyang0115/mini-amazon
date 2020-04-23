@@ -57,7 +57,7 @@ def cal_warehouse(x, y):
 def purchase(package_id):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # use port 8888 to communicate with daemon
-    client.connect(('localhost', 8888))
+    client.connect(('daemon', 8888))
     # NOTE: append a \n at the end to become a line
     msg = str(package_id) + '\n'
     client.send(msg.encode('utf-8'))

@@ -9,11 +9,11 @@ public class SQL {
 
     // table name
     private static final String TABLE_ITEM = "amazon_item";
-    private static final String TABLE_ORDER = "amazon_ORDER";
+    private static final String TABLE_ORDER = "amazon_order";
     private static final String TABLE_PACKAGE = "amazon_package";
     private static final String TABLE_WAREHOUSE = "amazon_warehouse";
     // database configuration
-    private static final String dbUrl = "jdbc:postgresql://localhost:5432/amazon";
+    private static final String dbUrl = "jdbc:postgresql://db:5432/amazon";
     private static final String dbUser = "postgres";
     private static final String dbPassword = "postgres";
 
