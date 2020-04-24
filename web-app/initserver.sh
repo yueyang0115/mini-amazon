@@ -1,4 +1,5 @@
 #!/bin/bash
+chmod 777 ./amazon/static/img
 python3 manage.py makemigrations
 python3 manage.py migrate
 res="$?"
