@@ -36,7 +36,7 @@ def send_email(receivers, text):
 
 def save_img(name, data):
     img = Image.open(data)
-    img.save('./amazon/static/img/%s' % name)
+    img.save("/code/amazon/static/img/%s" % (name), "JPEG", optimize=1)
 
 
 # calculate the nearest warehouse for the location
