@@ -19,15 +19,15 @@ import static edu.duke.ece568.erss.amazon.Utils.sendMsgTo;
  */
 public class AmazonDaemon {
     // private static final String WORLD_HOST = "vcm-13663.vm.duke.edu";
-    // private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
-    private static final String WORLD_HOST = "vcm-14250.vm.duke.edu";
+    private static final String WORLD_HOST = "vcm-14299.vm.duke.edu";
+    //private static final String WORLD_HOST = "vcm-14250.vm.duke.edu";
     private static final int WORLD_PORT = 23456;
 
-    // private static final String UPS_HOST = "vcm-14299.vm.duke.edu";
-    // private static final int UPS_PORT = 54321;
+    private static final String UPS_HOST = "vcm-14299.vm.duke.edu";
+    private static final int UPS_PORT = 54321;
 
-    private static final String UPS_HOST = "vcm-14250.vm.duke.edu";
-    private static final int UPS_PORT = 6666;
+    //private static final String UPS_HOST = "vcm-14250.vm.duke.edu";
+    //private static final int UPS_PORT = 6666;
 
     public static final int UPS_SERVER_PORT = 9999;
 
