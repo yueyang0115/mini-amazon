@@ -1,6 +1,6 @@
-# erss-hwk5-kx30-yy58
+# mini amazon
 
-Fancy Amazon!
+A full-stack web application modeling Amazon system paired with warehouse and delivery system. It simulated the whole process from buying products to getting the package delivered. Frontend is developed with **Django** and backend is developed in **Java**. **Google Protocol Buffer** is used to communicate with world-simulator and mini UPS system partner.  
 
 author: Kewei Xia, Yue Yang
 
